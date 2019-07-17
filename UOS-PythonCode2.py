@@ -15,7 +15,7 @@ from pandas import DataFrame
 from sklearn import metrics
 import statistics
 import csv
-import math
+import re
 
 
 
@@ -24,17 +24,17 @@ import math
 # scatter plot, dots colored by class value
 #print(X.shape)
 
-# with open('/home/emanuel/source/ns-3.29/enBs') as fenBs:
-with open('enBs') as fenBs:
+with open('/home/emanuel/Desktop/ns-3/source/ns-3.29/enBs') as fenBs:
+
     data1 = np.array(list((float(x), float(y), float(z), int(cellid)) for x, y, z, cellid in csv.reader(fenBs, delimiter= ',')))
     
-with open('LTEUEs') as fUEs:
+with open('/home/emanuel/Desktop/ns-3/source/ns-3.29/LTEUEs') as fUEs:
     data2 = np.array(list((float(x), float(y), float(z)) for x, y, z in csv.reader(fUEs, delimiter= ',')))
     
-with open('UABSs') as fUABS:
+with open('/home/emanuel/Desktop/ns-3/source/ns-3.29/UABSs') as fUABS:
     data3 = np.array(list((float(x), float(y), float(z), int(cellid)) for x, y, z, cellid in csv.reader(fUABS, delimiter= ',')))
 
-with open('UEsLowSinr') as fUEsLow:
+with open('/home/emanuel/Desktop/ns-3/source/ns-3.29/UEsLowSinr') as fUEsLow:
     data4 = np.array(list((float(x), float(y), float(z), float (Sinr), int (Imsi),int(cellid)) for x, y, z, Sinr,Imsi, cellid in csv.reader(fUEsLow, delimiter= ',')))
 
 #print("enBs: "+ str(data1))
@@ -42,13 +42,13 @@ with open('UEsLowSinr') as fUEsLow:
 #print("UABSs: "+ str(data3))
 #print("UEsLowSinr: "+ str(data4[0:2][0]))
 x,y,z, cellid= data1.T
-#plt.scatter(x,y,c="blue", label= "enBs")
+plt.scatter(x,y,c="blue")
 
 x1,y1,z1= data2.T
-#plt.scatter(x1,y1,c="gray", label= "UEs")
+plt.scatter(x1,y1,c="gray")
 
 x2,y2,z2, cellid3= data3.T
-#plt.scatter(x2,y2,c="green", label= "UABSs")
+plt.scatter(x2,y2,c="green")
 UABSCoordinates = np.array(list(zip(x2,y2)))
 
 x3,y3,z3, sinr, imsi, cellid4= data4.T
@@ -56,15 +56,14 @@ X = np.array(list(zip(x3,y3)))
 #X = StandardScaler().fit_transform(X)
 #print(X)
 
-#plt.scatter(x3,y3,c="red", label= "UEsSINRLow")
+plt.scatter(x3,y3,c="red")
 
-#plt.title('BS and UABS Scenario 1')
-#plt.xlabel('x (meters)')
-#plt.ylabel('y (meters)')
-#plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),
-#          fancybox=True, shadow=True, ncol=5)
-#plt.show()
-#print(X.size)
+plt.title('BS and UABS Scenario 1')
+plt.xlabel('x (meters)')
+plt.ylabel('y (meters)')
+plt.legend()
+plt.show()
+print(X.size)
 
 ##Clustering with DBSCAN
 DBClusters = DBSCAN( eps=500, min_samples=2, metric ='euclidean',algorithm = 'auto')
@@ -79,13 +78,13 @@ core_samples[DBClusters.core_sample_indices_] = True
 # PRINT CLUSTERS & # of CLUSTERS
 #print("Clusters:"+str(DBClusters.labels_))
 
-#print('Estimated number of clusters: %d' % n_clusters_)
+print('Estimated number of clusters: %d' % n_clusters_)
 
 clusters = [X[DBClusters.labels_ == i] for i in range(n_clusters_)]
 outliers = X[DBClusters.labels_ == -1]
 
 # Plot Outliers
-#plt.scatter(outliers[:,0], outliers[:,1], c="black", label="Outliers")
+plt.scatter(outliers[:,0], outliers[:,1], c="black")
 
 
 # Plot Clusters
@@ -100,15 +99,15 @@ for i in range(len(clusters)):
         x_clusters[i].append(clusters[i][j][0])
         y_clusters[i].append(clusters[i][j][1])
         
-#        
-#    plt.scatter(x_clusters[i], y_clusters[i], label= "Cluster %d" %i)
+     
+    plt.scatter(x_clusters[i], y_clusters[i])
     colors+=[i]
-
+     
 #plot the Clusters 
-#plt.title("DBSCAN Clustering")
-#plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.09),
-#          fancybox=True, shadow=True, ncol=5))
-#plt.show()     
+plt.title("DBSCAN Clustering")
+plt.legend(colors)
+plt.show()
+
  
 #Sum of SINR and mean to later prioritize the clusters  
 SUMSinr = [None] * len(clusters)
@@ -138,13 +137,9 @@ CopySINRAvg = SINRAvg.copy()
 SINRAvgPrioritized = []
 for i in range(len(SINRAvg)):
     #print("SINR Max:" + str(max(CopySINRAvg)))
-    SINRAvgPrioritized.append(min(CopySINRAvg))  #evaluar si es MAX o MIN que quiero para obtener el cluster con mayor SINR
-    CopySINRAvg.remove(min(CopySINRAvg))
-
-#Convert SINR to dB just to see which cluster has bigger SINR    
-SINRinDB = []
-for i in range(len(SINRAvgPrioritized)):
-      SINRinDB.append(10 * math.log(SINRAvgPrioritized[i]))  
+    SINRAvgPrioritized.append(max(CopySINRAvg))
+    CopySINRAvg.remove(max(CopySINRAvg))
+   
        
      
 #Centroids - median of clusters
@@ -172,17 +167,17 @@ for i in CentroidsPrio:
     print("{} {} ".format(i[0], i[1]))
 #centroidsarray = np.asarray(Centroids)
 #print(centroidsarray)
-
+    
 
 
 #  KNN Implementation for finding the nearest UABS to the X Centroid.
 # Create the knn model.
 # Look at the five closest neighbors.
-# Kneighbors = 2
-# knn = KNeighborsClassifier(n_neighbors= Kneighbors, weights= "uniform" , algorithm="auto")
-# knn.fit(UABSCoordinates,cellid3)
-# #predict witch UABS will be serving to the X Centroid.
-# Knnpredict= knn.predict(CentroidsPrio)
+Kneighbors = 2
+knn = KNeighborsClassifier(n_neighbors= Kneighbors, weights= "uniform" , algorithm="auto")
+knn.fit(UABSCoordinates,cellid3)
+#predict witch UABS will be serving to the X Centroid.
+Knnpredict= knn.predict(CentroidsPrio)
 
 #scores = {}
 #scores_list = []
