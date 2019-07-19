@@ -555,7 +555,7 @@ double enBHeight = 30;
 
 		MobilityHelper mobilityenB;
 		//mobilityenB.SetMobilityModel("ns3::ConstantPositionMobilityModel");
-		mobilityenB.SetPositionAllocator(positionAlloc);
+		mobilityenB.SetPositionAllocator(positionAlloc2);
 		// mobilityenB.SetPositionAllocator ("ns3::GridPositionAllocator",
 		// 							   "MinX", DoubleValue (0.0),
 		// 							   "MinY", DoubleValue (0.0),
