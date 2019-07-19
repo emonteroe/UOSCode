@@ -62,7 +62,7 @@
 using namespace ns3;
 
 const uint16_t numberOfeNodeBNodes = 6;
-const uint16_t numberOfUENodes = 100;
+const uint16_t numberOfUENodes = 80;
 const uint16_t numberOfUABS = 6;
 double simTime = 300;
 const int m_distance = 2000; //m_distance between enBs towers.
@@ -71,8 +71,8 @@ const int m_distance = 2000; //m_distance between enBs towers.
 // double interPacketInterval = 100;
 // uint16_t port = 8000;
 int evalvidId = 0;      
-int eNodeBTxPower = 43; //Set enodeB Power
-int UABSTxPower = 33;//33;   //Set UABS Power
+int eNodeBTxPower = 20; //Set enodeB Power
+int UABSTxPower = 0;//33;   //Set UABS Power
 uint8_t bandwidth = 100; // 100 RB --> 20MHz  |  25 RB --> 5MHz
 //uint8_t bandwidth = 25; // To use with UABS --> tengo que ver si no necesito crear otro LTEhelper solo para los UABS.
 double speedUABS = 10;
@@ -151,6 +151,7 @@ double enBHeight = 30;
 			UABS.open(UABSnod.str());   
 			uint16_t enBCellId;
 			uint16_t UABSCellId;
+			Ptr<LteEnbPhy> UABSPhy;
 			int i=0; 
 			//int j=0;
 			int k=0;
@@ -202,6 +203,11 @@ double enBHeight = 30;
 				std::ofstream enB;
 				enB.open(enodeB.str());*/    
 				UABSCellId = UABSLteDevs.Get(k)->GetObject<LteEnbNetDevice>()->GetCellId(); 
+				
+				UABSPhy = UABSLteDevs.Get(k)->GetObject<LteEnbNetDevice>()->GetPhy();
+				NS_LOG_UNCOND("UABS " << std::to_string(k) << " TX Power: ");
+				NS_LOG_UNCOND(UABSPhy->GetTxPower());
+				
 				Ptr<Node> object = *j;
 				Ptr<MobilityModel> UABSposition = object->GetObject<MobilityModel> ();
 				NS_ASSERT (UABSposition != 0);
@@ -263,10 +269,10 @@ double enBHeight = 30;
 			//UABSCellId = UABSLteDevs.Get(k)->GetObject<LteEnbNetDevice>()->GetCellId();
 	 
 			//Turn on or off UABS TX Power:
-			//If el UABS_On_Flag o el UABSFlag esta True, setea la potencia, de lo contrario mantenla en 0 (apagado).
+			//If el UABS_On_Flag o el UABSFlag esta True, set la potencia, de lo contrario mantenla en 0 (apagado).
 			if (UABSFlag == true && UABS_On_Flag == false) // revisar esta logica
 			{
-				UABSTxPower = 33;
+				UABSTxPower = 20;
 				
 				for( uint16_t i = 0; i < UABSLteDevs.GetN(); i++) 
 				{
@@ -276,7 +282,6 @@ double enBHeight = 30;
 					// NS_LOG_UNCOND(UABSPhy->GetTxPower());
 					//lteHelper->AttachToClosestEnb (ueLteDevs, UABSLteDevs);
 					
-					//AddX2Interface(UABSNodes.Get(i), Ptr< Node > 	enbNode2);
 				}
 				UABS_On_Flag = true;
 			}
@@ -453,8 +458,8 @@ double enBHeight = 30;
     	lteHelper->SetEnbDeviceAttribute("UlEarfcn", UintegerValue(18100)); //investigar cual es la frecuencia que voy a utilizar.
    		// lteHelper->SetUeDeviceAttribute ("DlEarfcn", UintegerValue (200));
 
-		Config::SetDefault( "ns3::LteUePhy::TxPower", DoubleValue(24) );         // Transmission power in dBm
-		Config::SetDefault( "ns3::LteUePhy::NoiseFigure", DoubleValue(5) );     // Default 5
+		// Config::SetDefault( "ns3::LteUePhy::TxPower", DoubleValue(24) );         // Transmission power in dBm
+		// Config::SetDefault( "ns3::LteUePhy::NoiseFigure", DoubleValue(5) );     // Default 5
 		// Config::SetDefault( "ns3::LteEnbPhy::TxPower", DoubleValue(40) );        // Transmission power in dBm
 		// Config::SetDefault( "ns3::LteEnbPhy::NoiseFigure", DoubleValue(6) );    // Default 5
 
@@ -464,14 +469,13 @@ double enBHeight = 30;
 	  
 		//Set Handover algorithm 
 
-		//lteHelper->SetHandoverAlgorithmType ("ns3::A2A4RsrqHandoverAlgorithm"); // Handover algorithm implementation based on RSRQ measurements, Event A2 and Event A4.
-		//lteHelper->SetHandoverAlgorithmAttribute ("ServingCellThreshold", UintegerValue (30));
-		//lteHelper->SetHandoverAlgorithmAttribute ("NeighbourCellOffset", UintegerValue (1));                                      
+		// lteHelper->SetHandoverAlgorithmType ("ns3::A2A4RsrqHandoverAlgorithm"); // Handover algorithm implementation based on RSRQ measurements, Event A2 and Event A4.
+		// lteHelper->SetHandoverAlgorithmAttribute ("ServingCellThreshold", UintegerValue (30));
+		// lteHelper->SetHandoverAlgorithmAttribute ("NeighbourCellOffset", UintegerValue (2));                                      
 		lteHelper->SetHandoverAlgorithmType ("ns3::A3RsrpHandoverAlgorithm"); // Handover by Reference Signal Reference Power (RSRP)
-		// lteHelper->SetHandoverAlgorithmAttribute ("Hysteresis", DoubleValue (3.0));
-		lteHelper->SetHandoverAlgorithmAttribute ("TimeToTrigger", TimeValue (MilliSeconds (256)));
-		lteHelper->SetHandoverAlgorithmAttribute ("Hysteresis", DoubleValue (3.0));
-		//lteHelper->SetHandoverAlgorithmAttribute ("TimeToTrigger", TimeValue (MilliSeconds (128)));
+		lteHelper->SetHandoverAlgorithmAttribute ("TimeToTrigger", TimeValue (MilliSeconds (256))); //default: 256
+		lteHelper->SetHandoverAlgorithmAttribute ("Hysteresis", DoubleValue (1.0)); //default: 3.0
+		
 
 
 		 //Antenna parameters  (cuando activo la antena da error de " what():  vector::_M_range_check: __n (which is 4) >= this->size() (which is 4)" )
@@ -619,15 +623,15 @@ double enBHeight = 30;
 			
 		}
 		// //Set Power of UABS, initially 0 to simulate a turned off UABS.
-		// Ptr<LteEnbPhy> UABSPhy;
+		Ptr<LteEnbPhy> UABSPhy;
 	 
-		// 	for( uint16_t i = 0; i < UABSLteDevs.GetN(); i++) 
-		// 	{
-		// 		UABSPhy = UABSLteDevs.Get(i)->GetObject<LteEnbNetDevice>()->GetPhy();
-		// 		UABSPhy->SetTxPower(UABSTxPower);
-		// 		// NS_LOG_UNCOND("UABS TX Power: ");
-		// 		// NS_LOG_UNCOND(UABSPhy->GetTxPower());
-		// 	}
+			for( uint16_t i = 0; i < UABSLteDevs.GetN(); i++) 
+			{
+				UABSPhy = UABSLteDevs.Get(i)->GetObject<LteEnbNetDevice>()->GetPhy();
+				UABSPhy->SetTxPower(UABSTxPower);
+				// NS_LOG_UNCOND("UABS TX Power: ");
+				// NS_LOG_UNCOND(UABSPhy->GetTxPower());
+			}
 
 
 	  //Get Power of eNodeBs and UABSs
@@ -665,8 +669,8 @@ double enBHeight = 30;
 		lteHelper->Attach (ueLteDevs);
 		
 		// this enables handover for macro eNBs
-		lteHelper->AddX2Interface (enbNodes);
-		lteHelper->AddX2Interface (UABSNodes);
+		lteHelper->AddX2Interface (enbNodes); // X2 interface for macrocells
+		lteHelper->AddX2Interface (UABSNodes); // X2 interface for UABSs
 
 		//Set a X2 interface between UABS and all enBs to enable handover.
 		for (uint16_t i = 0; i < UABSNodes.GetN(); i++) 
