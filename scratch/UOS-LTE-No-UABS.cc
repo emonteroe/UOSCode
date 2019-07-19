@@ -548,10 +548,10 @@ double enBHeight = 30;
 		// }  }
 
 		Ptr<ListPositionAllocator> positionAlloc2 = CreateObject<ListPositionAllocator> ();
-		positionAlloc->Add (Vector( 1500, 1500 , enBHeight));
-		positionAlloc->Add (Vector( 4500, 1500 , enBHeight));
-		positionAlloc->Add (Vector( 1500, 4500 , enBHeight));
-		positionAlloc->Add (Vector( 4500, 4500 , enBHeight));
+		positionAlloc2->Add (Vector( 1500, 1500 , enBHeight));
+		positionAlloc2->Add (Vector( 4500, 1500 , enBHeight));
+		positionAlloc2->Add (Vector( 1500, 4500 , enBHeight));
+		positionAlloc2->Add (Vector( 4500, 4500 , enBHeight));
 
 		MobilityHelper mobilityenB;
 		//mobilityenB.SetMobilityModel("ns3::ConstantPositionMobilityModel");
