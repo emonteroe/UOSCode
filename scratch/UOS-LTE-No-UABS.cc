@@ -61,7 +61,7 @@
 
 using namespace ns3;
 
-const uint16_t numberOfeNodeBNodes = 6;
+const uint16_t numberOfeNodeBNodes = 4;
 const uint16_t numberOfUENodes = 80;
 const uint16_t numberOfUABS = 0;
 double simTime = 300;
@@ -71,7 +71,7 @@ const int m_distance = 2000; //m_distance between enBs towers.
 // double interPacketInterval = 100;
 // uint16_t port = 8000;
 int evalvidId = 0;      
-int eNodeBTxPower = 0; //Set enodeB Power
+int eNodeBTxPower = 30; //Set enodeB Power
 int UABSTxPower = 0;//33;   //Set UABS Power
 uint8_t bandwidth = 100; // 100 RB --> 20MHz  |  25 RB --> 5MHz
 //uint8_t bandwidth = 25; // To use with UABS --> tengo que ver si no necesito crear otro LTEhelper solo para los UABS.
@@ -91,7 +91,7 @@ uint32_t DropPacketsum = 0;
 uint32_t LostPacketsum = 0;
 double Delaysum = 0;
 std::stringstream cmd;
-double UABSHeight = 30;
+double UABSHeight = 0;
 double enBHeight = 30;
 
 	 
@@ -480,10 +480,10 @@ double enBHeight = 30;
 
 		 //Antenna parameters  (cuando activo la antena da error de " what():  vector::_M_range_check: __n (which is 4) >= this->size() (which is 4)" )
 
-		// lteHelper->SetEnbAntennaModelType("ns3::CosineAntennaModel");
-		// lteHelper->SetEnbAntennaModelAttribute("Orientation", DoubleValue(0));
-		// lteHelper->SetEnbAntennaModelAttribute("Beamwidth", DoubleValue(60));
-		// lteHelper->SetEnbAntennaModelAttribute("MaxGain", DoubleValue(0.0));
+		lteHelper->SetEnbAntennaModelType("ns3::CosineAntennaModel");
+		lteHelper->SetEnbAntennaModelAttribute("Orientation", DoubleValue(0));
+		lteHelper->SetEnbAntennaModelAttribute("Beamwidth", DoubleValue(60));
+		lteHelper->SetEnbAntennaModelAttribute("MaxGain", DoubleValue(0.0));
 
 		//Pathlossmodel
 		lteHelper->SetAttribute("PathlossModel",StringValue("ns3::NakagamiPropagationLossModel"));
@@ -531,21 +531,27 @@ double enBHeight = 30;
 		NS_LOG_UNCOND("Installing Mobility Model in enBs...");
 
 		// Install Mobility Model eNodeBs
-		Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
-		int boundX = 0;
-		int boundY = 0;
-		for (uint16_t i = 0; i < numberOfeNodeBNodes; i++)  // Pendiente: enhance this function in order to position the enbs better.
-		{
-			for (uint16_t j = 0; j < numberOfeNodeBNodes; j++)  // Pendiente: enhance this function in order to position the enbs better.
-			{
-			//positionAlloc->Add (Vector(m_distance * i, 0, 0));
-			 boundX = m_distance *j;
-			 boundY= m_distance *i;
-			 if(boundX <= 6000 && boundY <= 6000 )
-			{
-				positionAlloc->Add (Vector( boundX, boundY , enBHeight));
-			}
-		}  }
+		// Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
+		// int boundX = 0;
+		// int boundY = 0;
+		// for (uint16_t i = 0; i < numberOfeNodeBNodes; i++)  // Pendiente: enhance this function in order to position the enbs better.
+		// {
+		// 	for (uint16_t j = 0; j < numberOfeNodeBNodes; j++)  // Pendiente: enhance this function in order to position the enbs better.
+		// 	{
+		// 	//positionAlloc->Add (Vector(m_distance * i, 0, 0));
+		// 	 boundX = m_distance *j;
+		// 	 boundY= m_distance *i;
+		// 	 if(boundX <= 6000 && boundY <= 6000 )
+		// 	{
+		// 		positionAlloc->Add (Vector( boundX, boundY , enBHeight));
+		// 	}
+		// }  }
+
+		Ptr<ListPositionAllocator> positionAlloc2 = CreateObject<ListPositionAllocator> ();
+		positionAlloc->Add (Vector( 1500, 1500 , enBHeight));
+		positionAlloc->Add (Vector( 4500, 1500 , enBHeight));
+		positionAlloc->Add (Vector( 1500, 4500 , enBHeight));
+		positionAlloc->Add (Vector( 4500, 4500 , enBHeight));
 
 		MobilityHelper mobilityenB;
 		//mobilityenB.SetMobilityModel("ns3::ConstantPositionMobilityModel");
