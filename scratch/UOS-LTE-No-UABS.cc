@@ -62,7 +62,7 @@
 using namespace ns3;
 
 const uint16_t numberOfeNodeBNodes = 4;
-const uint16_t numberOfUENodes = 80;
+const uint16_t numberOfUENodes = 245; //Number of user to test: 245, 392, 490 (The number of users and their traffic model follow the parameters recommended by the 3GPP)
 const uint16_t numberOfUABS = 0;
 double simTime = 300;
 const int m_distance = 2000; //m_distance between enBs towers.
@@ -71,9 +71,9 @@ const int m_distance = 2000; //m_distance between enBs towers.
 // double interPacketInterval = 100;
 // uint16_t port = 8000;
 int evalvidId = 0;      
-int eNodeBTxPower = 30; //Set enodeB Power
+int eNodeBTxPower = 30; //Set enodeB Power dBm
 int UABSTxPower = 0;//33;   //Set UABS Power
-uint8_t bandwidth = 100; // 100 RB --> 20MHz  |  25 RB --> 5MHz
+uint8_t bandwidth = 25; // 100 RB --> 20MHz  |  25 RB --> 5MHz
 //uint8_t bandwidth = 25; // To use with UABS --> tengo que ver si no necesito crear otro LTEhelper solo para los UABS.
 double speedUABS = 10;
 double ue_info[numberOfeNodeBNodes + numberOfUABS][numberOfUENodes]; //UE Connection Status Register Matrix
