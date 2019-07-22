@@ -93,6 +93,8 @@ double Delaysum = 0;
 std::stringstream cmd;
 double UABSHeight = 30.0;
 double enBHeight = 30.0;
+uint32_t nRuns = 1;
+uint32_t randomSeed = 1234;
 
 	 
 		NS_LOG_COMPONENT_DEFINE ("UOSLTE");
@@ -133,7 +135,7 @@ double enBHeight = 30.0;
 
 		}
 
-
+		//---------------Get SINR of UEs and Positions--------------------------//
 		void GetPositionUEandenB(NodeContainer ueNodes, NodeContainer enbNodes, NodeContainer UABSNodes, NetDeviceContainer enbLteDevs,NetDeviceContainer UABSLteDevs, NetDeviceContainer ueLteDevs)
 		{
 		// iterate our nodes and print their position.
@@ -222,7 +224,7 @@ double enBHeight = 30.0;
 			Simulator::Schedule(Seconds(5), &GetPositionUEandenB,ueNodes, enbNodes, UABSNodes, enbLteDevs, UABSLteDevs, ueLteDevs );
 		}
 
-	  //Get SINR of UEs and Positions
+	  //---------------Get SINR of UEs and Positions--------------------------//
 		void GetSinrUE (NetDeviceContainer ueLteDevs, NodeContainer ueNodes)
 		{  
 			uint64_t UEImsi;
@@ -258,7 +260,7 @@ double enBHeight = 30.0;
 			Simulator::Schedule(Seconds(5), &GetSinrUE,ueLteDevs,ueNodes);
 		}
 
-
+		// ---------------Function to set Power, Position and Velocity of UABS with received prioritized locations-------------//
 		void SetTXPowerPositionAndVelocityUABS(NodeContainer UABSNodes, double speedUABS, NetDeviceContainer UABSLteDevs, std::vector<ns3::Vector3D> CoorPriorities_Vector)
 		{
 			Ptr<LteEnbPhy> UABSPhy;
@@ -458,6 +460,16 @@ double enBHeight = 30.0;
 		// LogComponentEnable ("EvalvidClient", LOG_LEVEL_INFO);
 		// LogComponentEnable ("EvalvidServer", LOG_LEVEL_INFO);
 
+		CommandLine cmm;
+    	cmm.AddValue("randomSeed", "value of seed for random", randomSeed);
+    	//cmm.AddValue("handoverAlg", "Handover algorith in use", handoverAlg);
+    	cmm.Parse(argc, argv);
+
+		for (uint32_t z = 0; z < nRuns; z++){
+			uint32_t seed = randomSeed + z;
+			SeedManager::SetSeed (seed);
+			NS_LOG_UNCOND("Run # " << std::to_string(z));
+
 		Ptr<LteHelper> lteHelper = CreateObject<LteHelper> ();
 		//Ptr<EpcHelper>  epcHelper = CreateObject<EpcHelper> ();
 		Ptr<PointToPointEpcHelper>  epcHelper = CreateObject<PointToPointEpcHelper> ();
@@ -490,16 +502,16 @@ double enBHeight = 30.0;
 		// lteHelper->SetHandoverAlgorithmAttribute ("NeighbourCellOffset", UintegerValue (2));                                      
 		lteHelper->SetHandoverAlgorithmType ("ns3::A3RsrpHandoverAlgorithm"); // Handover by Reference Signal Reference Power (RSRP)
 		lteHelper->SetHandoverAlgorithmAttribute ("TimeToTrigger", TimeValue (MilliSeconds (256))); //default: 256
-		lteHelper->SetHandoverAlgorithmAttribute ("Hysteresis", DoubleValue (1.0)); //default: 3.0
+		lteHelper->SetHandoverAlgorithmAttribute ("Hysteresis", DoubleValue (3.0)); //default: 3.0
 		
 
 
 		 //Antenna parameters  (cuando activo la antena da error de " what():  vector::_M_range_check: __n (which is 4) >= this->size() (which is 4)" )
 
-		// lteHelper->SetEnbAntennaModelType("ns3::CosineAntennaModel");
-		// lteHelper->SetEnbAntennaModelAttribute("Orientation", DoubleValue(0));
-		// lteHelper->SetEnbAntennaModelAttribute("Beamwidth", DoubleValue(60));
-		// lteHelper->SetEnbAntennaModelAttribute("MaxGain", DoubleValue(0.0));
+		lteHelper->SetEnbAntennaModelType("ns3::CosineAntennaModel");
+		lteHelper->SetEnbAntennaModelAttribute("Orientation", DoubleValue(0));
+		lteHelper->SetEnbAntennaModelAttribute("Beamwidth", DoubleValue(60));
+		lteHelper->SetEnbAntennaModelAttribute("MaxGain", DoubleValue(0.0));
 
 		//Pathlossmodel
 		//lteHelper->SetAttribute("PathlossModel",StringValue("ns3::NakagamiPropagationLossModel"));
@@ -576,40 +588,16 @@ double enBHeight = 30.0;
 		positionAllocenB->Add (Vector( 4500, 4500 , enBHeight));
 
 		MobilityHelper mobilityenB;
-		//mobilityenB.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+		mobilityenB.SetMobilityModel("ns3::ConstantPositionMobilityModel");
 		mobilityenB.SetPositionAllocator(positionAllocenB);
-		// mobilityenB.SetPositionAllocator ("ns3::GridPositionAllocator",
-		// 							   "MinX", DoubleValue (0.0),
-		// 							   "MinY", DoubleValue (0.0),
-		// 							   //"Z", DoubleValue (30.0),
-		// 							   "DeltaX", DoubleValue (m_distance),
-		// 							   "DeltaY", DoubleValue (m_distance),
-		// 							   "GridWidth", UintegerValue (3),
-		// 							   "LayoutType", StringValue ("RowFirst"));
+
 
 		mobilityenB.Install(enbNodes);
 
 
 		NS_LOG_UNCOND("Installing Mobility Model in UEs...");
 
-		// Install Mobility Model User Equipments
-
-		// Ptr<ListPositionAllocator> positionAllocUEs = CreateObject<ListPositionAllocator> ();
-		// int boundX = 0;
-		// int boundY = 0;
-		// for (uint16_t i = 0; i < numberOfUENodes; i++)  // Pendiente: enhance this function in order to position the enbs better.
-		// {
-		// 	for (uint16_t j = 0; j < numberOfUENodes; j++)  // Pendiente: enhance this function in order to position the enbs better.
-		// 	{
-		// 	//positionAlloc->Add (Vector(m_distance * i, 0, 0));
-		// 	 boundX = rand() % m_distance *j;
-		// 	 boundY= rand() % m_distance *i;
-		// 	 if(boundX <= 6000 && boundY <= 6000 )
-		// 	{
-				
-		// 		positionAllocUEs->Add (Vector( boundX, boundY , 1.5));
-		// 	}
-		// }  }
+		// ------------------Install Mobility Model User Equipments-------------------//
 
 		MobilityHelper mobilityUEs;
 		mobilityUEs.SetMobilityModel ("ns3::RandomWalk2dMobilityModel",
@@ -625,14 +613,16 @@ double enBHeight = 30.0;
 		mobilityUEs.SetPositionAllocator("ns3::RandomBoxPositionAllocator",  // to use OkumuraHataPropagationLossModel needs to be in a height greater then 0.
 			 							 "X", StringValue ("ns3::UniformRandomVariable[Min=1.0|Max=6000.0]"),
 										 "Y", StringValue ("ns3::UniformRandomVariable[Min=1.0|Max=6000.0]"),
-										 "Z", StringValue ("ns3::UniformRandomVariable[Min=2|Max=5]"));
+										 "Z", StringValue ("ns3::UniformRandomVariable[Min=0.5|Max=1.50]"));
 		//mobilityUEs.SetPositionAllocator(positionAllocUEs);
 
+
 		mobilityUEs.Install(ueNodes);
-	  
+		
+	
 	  
 		NS_LOG_UNCOND("Installing Mobility Model in UABSs...");
-		// Install Mobility Model UABS
+		// ----------------Install Mobility Model UABS--------------------//
 
 		Ptr<ListPositionAllocator> positionAllocUABS = CreateObject<ListPositionAllocator> ();
 		positionAllocUABS->Add (Vector( 1500, 1500 , enBHeight)); //1
@@ -650,7 +640,7 @@ double enBHeight = 30.0;
 								 //"Speed", StringValue ("ns3::ConstantRandomVariable[Constant=1.0]"),
 			//                     "Speed", StringValue ("ns3::UniformRandomVariable[Min=2.0|Max=4.0]"),
 			//		     "Bounds", StringValue ("0|2000|0|2000"));
-		mobilityenB.SetPositionAllocator(positionAllocUABS);
+		mobilityUABS.SetPositionAllocator(positionAllocUABS);
 		// mobilityUABS.SetPositionAllocator ("ns3::GridPositionAllocator",
 		// 								"MinX", DoubleValue (0.0),
 		// 								"MinY", DoubleValue (0.0),
@@ -661,9 +651,9 @@ double enBHeight = 30.0;
 
 		mobilityUABS.Install(UABSNodes);
 
-			  
+					  
 
-		// Install LTE Devices to the nodes
+		// --------------------Install LTE Devices to the nodes----------------------//
 		NetDeviceContainer enbLteDevs = lteHelper->InstallEnbDevice (enbNodes);
 		NetDeviceContainer ueLteDevs = lteHelper->InstallUeDevice (ueNodes);
 		NetDeviceContainer UABSLteDevs = lteHelper->InstallEnbDevice (UABSNodes);
@@ -746,6 +736,8 @@ double enBHeight = 30.0;
 				NS_LOG_UNCOND("Creating X2 Interface between UABS " << UABSNodes.Get(i) << " and enB " << enbNodes.Get(j));
 			}
 		}
+
+		//lteHelper->HandoverRequest(Seconds())
 		
 		
 		// activate EPSBEARER
@@ -841,9 +833,9 @@ double enBHeight = 30.0;
 
 
 		//Gnuplot parameters
-		string fileNameWithNoExtension = "FlowVSThroughput";
-		string graphicsFileName        = fileNameWithNoExtension + ".png";
-		string plotFileName            = fileNameWithNoExtension + ".plt";
+		string fileNameWithNoExtension = "FlowVSThroughput_run_";
+		string graphicsFileName        = fileNameWithNoExtension + std::to_string(z) +".png";
+		string plotFileName            = fileNameWithNoExtension + std::to_string(z)+".plt";
 		string plotTitle               = "Flow vs Throughput";
 		string dataTitle               = "Throughput";
 
@@ -891,6 +883,7 @@ double enBHeight = 30.0;
 		Simulator::Destroy ();
 	  
 		NS_LOG_INFO ("Done.");
+	}
 		return 0;
 
 	}
