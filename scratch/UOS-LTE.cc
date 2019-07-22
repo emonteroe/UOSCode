@@ -61,7 +61,7 @@
 
 using namespace ns3;
 
-const uint16_t numberOfeNodeBNodes = 6;
+const uint16_t numberOfeNodeBNodes = 4;
 const uint16_t numberOfUENodes = 80;
 const uint16_t numberOfUABS = 6;
 double simTime = 300;
@@ -91,8 +91,8 @@ uint32_t DropPacketsum = 0;
 uint32_t LostPacketsum = 0;
 double Delaysum = 0;
 std::stringstream cmd;
-double UABSHeight = 30;
-double enBHeight = 30;
+double UABSHeight = 30.0;
+double enBHeight = 30.0;
 
 	 
 		NS_LOG_COMPONENT_DEFINE ("UOSLTE");
@@ -268,12 +268,12 @@ double enBHeight = 30;
 
 			//UABSCellId = UABSLteDevs.Get(k)->GetObject<LteEnbNetDevice>()->GetCellId();
 	 
-			//Turn on or off UABS TX Power:
+			//---------Turn on or off UABS TX Power:
 			//If el UABS_On_Flag o el UABSFlag esta True, set la potencia, de lo contrario mantenla en 0 (apagado).
 			if (UABSFlag == true && UABS_On_Flag == false) // revisar esta logica
 			{
-				UABSTxPower = 20;
-				
+				UABSTxPower = 10;
+				//---------Turn On UABS Power
 				for( uint16_t i = 0; i < UABSLteDevs.GetN(); i++) 
 				{
 					UABSPhy = UABSLteDevs.Get(i)->GetObject<LteEnbNetDevice>()->GetPhy();
@@ -283,12 +283,22 @@ double enBHeight = 30;
 					//lteHelper->AttachToClosestEnb (ueLteDevs, UABSLteDevs);
 					
 				}
+
+				//-----------Set Velocity of UABS to start moving:
+				//If  si el UABSFlag esta True, setea la velocidad, de lo contrario si UABS_On_Flag esta True mantenla en 0 (apagado).
+				for (uint16_t n=0 ; n < UABSNodes.GetN(); n++)
+				{
+					Ptr<ConstantVelocityMobilityModel> VelUABS = UABSNodes.Get(n)->GetObject<ConstantVelocityMobilityModel>();
+					VelUABS->SetVelocity(Vector(speedUABS, 0,0));//speedUABS, 0));
+					//NS_LOG_UNCOND (VelUABS->GetVelocity());
+				}
 				UABS_On_Flag = true;
 			}
 			else if (UABSFlag == false && UABS_On_Flag == false) 
 			{
 
 				UABSTxPower = 0;
+				//Turn off UABS Power
 				for( uint16_t i = 0; i < UABSLteDevs.GetN(); i++) 
 				{
 					UABSPhy = UABSLteDevs.Get(i)->GetObject<LteEnbNetDevice>()->GetPhy();
@@ -298,10 +308,21 @@ double enBHeight = 30;
 					//lteHelper->AttachToClosestEnb (ueLteDevs, UABSLteDevs);
 				}
 
+				//Set Velocity of UABS to stop moving:
+				
+				for (uint16_t n=0 ; n < UABSNodes.GetN(); n++)
+				{
+					Ptr<ConstantVelocityMobilityModel> VelUABS = UABSNodes.Get(n)->GetObject<ConstantVelocityMobilityModel>();
+					VelUABS->SetVelocity(Vector(0, 0,0));
+					//NS_LOG_UNCOND (VelUABS->GetVelocity());
+				}
+
 			}
 
 		//Set Position of UABS / or trajectory to go to assist a low SINR Area:
-			//If la posicion cambio y el UABS_On_Flag esta True, setea la nueva posicion.
+		//If la posicion cambio y el UABS_On_Flag esta True, setea la nueva posicion.
+
+			//To do: here i have to receive a variable saying which UABS is going to X position.
 		for (uint16_t k=0 ; k < UABSNodes.GetN(); k++)
 		{
 			Ptr<ConstantVelocityMobilityModel> PosUABS = UABSNodes.Get(k)->GetObject<ConstantVelocityMobilityModel>();
@@ -313,19 +334,9 @@ double enBHeight = 30;
 			NS_LOG_UNCOND (PosUABS->GetPosition());
 		}
 
-
-		//Set Velocity of UABS to start moving:
-		//If  si el UABSFlag esta True, setea la velocidad, de lo contrario si UABS_On_Flag esta True mantenla en 0 (apagado).
-		for (uint16_t n=0 ; n < UABSNodes.GetN(); n++)
-		{
-			Ptr<ConstantVelocityMobilityModel> VelUABS = UABSNodes.Get(n)->GetObject<ConstantVelocityMobilityModel>();
-			VelUABS->SetVelocity(Vector(speedUABS, 0,0));//speedUABS, 0));
-			//NS_LOG_UNCOND (VelUABS->GetVelocity());
 		}
 
-		}
-
-
+		// ---------------Function to run the Python Command in order to receive the prioritized locations -------------//
 		std::string exec(const char* cmd)
 		{
 			std::array<char, 128> buffer;
@@ -341,7 +352,7 @@ double enBHeight = 30;
 			return result;
 		}
 
-
+		// ---------------Function to receive the prioritized locations into an Vector 3D in order to later call the SetTXPowerPositionAndVelocityUABS function. -----------//
 		void GetPrioritizedClusters(NodeContainer UABSNodes, double speedUABS, NetDeviceContainer UABSLteDevs)
 		{
 			//std::stringstream cmd;
@@ -390,6 +401,10 @@ double enBHeight = 30;
 			Simulator::Schedule(Seconds(6), &GetPrioritizedClusters,UABSNodes,  speedUABS,  UABSLteDevs);
 		}
 
+
+
+
+		// ------------ Function to calculate the Throughput ---------------//
 		void ThroughputCalc(Ptr<FlowMonitor> monitor, Ptr<Ipv4FlowClassifier> classifier,Gnuplot2dDataset datasetThroughput)
 		{
 
@@ -436,7 +451,8 @@ double enBHeight = 30;
 		}
 
 
-		// MAIN FUNCTION
+
+		//----------------------MAIN FUNCTION---------------------------//
 		int main (int argc, char *argv[])
 		{
 		// LogComponentEnable ("EvalvidClient", LOG_LEVEL_INFO);
@@ -458,8 +474,8 @@ double enBHeight = 30;
     	lteHelper->SetEnbDeviceAttribute("UlEarfcn", UintegerValue(18100)); //investigar cual es la frecuencia que voy a utilizar.
    		// lteHelper->SetUeDeviceAttribute ("DlEarfcn", UintegerValue (200));
 
-		// Config::SetDefault( "ns3::LteUePhy::TxPower", DoubleValue(24) );         // Transmission power in dBm
-		// Config::SetDefault( "ns3::LteUePhy::NoiseFigure", DoubleValue(5) );     // Default 5
+		 Config::SetDefault( "ns3::LteUePhy::TxPower", DoubleValue(10) );         // Transmission power in dBm
+		 Config::SetDefault( "ns3::LteUePhy::NoiseFigure", DoubleValue(10) );     // Default 5
 		// Config::SetDefault( "ns3::LteEnbPhy::TxPower", DoubleValue(40) );        // Transmission power in dBm
 		// Config::SetDefault( "ns3::LteEnbPhy::NoiseFigure", DoubleValue(6) );    // Default 5
 
@@ -486,9 +502,15 @@ double enBHeight = 30;
 		// lteHelper->SetEnbAntennaModelAttribute("MaxGain", DoubleValue(0.0));
 
 		//Pathlossmodel
-		lteHelper->SetAttribute("PathlossModel",StringValue("ns3::NakagamiPropagationLossModel"));
-		//lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::HybridBuildingsPropagationLossModel"));
+		//lteHelper->SetAttribute("PathlossModel",StringValue("ns3::NakagamiPropagationLossModel"));
 		
+		//lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::FriisPropagationLossModel"));
+		
+		lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
+    	lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
+    	Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
+		
+		//lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::HybridBuildingsPropagationLossModel")); // it has to be used with building model
 		// use always LOS model ( for the HybridBuildingsPropagationModel )
   		//lteHelper->SetPathlossModelAttribute ("Los2NlosThr", DoubleValue (1e6));
 
@@ -531,25 +553,31 @@ double enBHeight = 30;
 		NS_LOG_UNCOND("Installing Mobility Model in enBs...");
 
 		// Install Mobility Model eNodeBs
-		Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
-		int boundX = 0;
-		int boundY = 0;
-		for (uint16_t i = 0; i < numberOfeNodeBNodes; i++)  // Pendiente: enhance this function in order to position the enbs better.
-		{
-			for (uint16_t j = 0; j < numberOfeNodeBNodes; j++)  // Pendiente: enhance this function in order to position the enbs better.
-			{
-			//positionAlloc->Add (Vector(m_distance * i, 0, 0));
-			 boundX = m_distance *j;
-			 boundY= m_distance *i;
-			 if(boundX <= 6000 && boundY <= 6000 )
-			{
-				positionAlloc->Add (Vector( boundX, boundY , enBHeight));
-			}
-		}  }
+		// Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
+		// int boundX = 0;
+		// int boundY = 0;
+		// for (uint16_t i = 0; i < numberOfeNodeBNodes; i++)  // Pendiente: enhance this function in order to position the enbs better.
+		// {
+		// 	for (uint16_t j = 0; j < numberOfeNodeBNodes; j++)  // Pendiente: enhance this function in order to position the enbs better.
+		// 	{
+		// 	//positionAlloc->Add (Vector(m_distance * i, 0, 0));
+		// 	 boundX = m_distance *j;
+		// 	 boundY= m_distance *i;
+		// 	 if(boundX <= 6000 && boundY <= 6000 )
+		// 	{
+		// 		positionAlloc->Add (Vector( boundX, boundY , enBHeight));
+		// 	}
+		// }  }
+
+		Ptr<ListPositionAllocator> positionAllocenB = CreateObject<ListPositionAllocator> ();
+		positionAllocenB->Add (Vector( 1500, 1500 , enBHeight));
+		positionAllocenB->Add (Vector( 4500, 1500 , enBHeight));
+		positionAllocenB->Add (Vector( 1500, 4500 , enBHeight));
+		positionAllocenB->Add (Vector( 4500, 4500 , enBHeight));
 
 		MobilityHelper mobilityenB;
 		//mobilityenB.SetMobilityModel("ns3::ConstantPositionMobilityModel");
-		mobilityenB.SetPositionAllocator(positionAlloc);
+		mobilityenB.SetPositionAllocator(positionAllocenB);
 		// mobilityenB.SetPositionAllocator ("ns3::GridPositionAllocator",
 		// 							   "MinX", DoubleValue (0.0),
 		// 							   "MinY", DoubleValue (0.0),
@@ -565,6 +593,24 @@ double enBHeight = 30;
 		NS_LOG_UNCOND("Installing Mobility Model in UEs...");
 
 		// Install Mobility Model User Equipments
+
+		// Ptr<ListPositionAllocator> positionAllocUEs = CreateObject<ListPositionAllocator> ();
+		// int boundX = 0;
+		// int boundY = 0;
+		// for (uint16_t i = 0; i < numberOfUENodes; i++)  // Pendiente: enhance this function in order to position the enbs better.
+		// {
+		// 	for (uint16_t j = 0; j < numberOfUENodes; j++)  // Pendiente: enhance this function in order to position the enbs better.
+		// 	{
+		// 	//positionAlloc->Add (Vector(m_distance * i, 0, 0));
+		// 	 boundX = rand() % m_distance *j;
+		// 	 boundY= rand() % m_distance *i;
+		// 	 if(boundX <= 6000 && boundY <= 6000 )
+		// 	{
+				
+		// 		positionAllocUEs->Add (Vector( boundX, boundY , 1.5));
+		// 	}
+		// }  }
+
 		MobilityHelper mobilityUEs;
 		mobilityUEs.SetMobilityModel ("ns3::RandomWalk2dMobilityModel",
 									 "Mode", StringValue ("Time"),
@@ -573,14 +619,29 @@ double enBHeight = 30;
 									 //"Speed", StringValue ("ns3::UniformRandomVariable[Min=2.0|Max=4.0]"),
 									 "Speed", StringValue ("ns3::UniformRandomVariable[Min=4.0|Max=8.0]"),
 									 "Bounds", StringValue ("0|6000|0|6000"));
-		mobilityUEs.SetPositionAllocator("ns3::RandomRectanglePositionAllocator",
-			 							 "X", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=6000.0]"),
-										 "Y", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=6000.0]"));
+		// mobilityUEs.SetPositionAllocator("ns3::RandomRectanglePositionAllocator",
+		// 	 							 "X", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=6000.0]"),
+		// 								 "Y", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=6000.0]"));
+		mobilityUEs.SetPositionAllocator("ns3::RandomBoxPositionAllocator",  // to use OkumuraHataPropagationLossModel needs to be in a height greater then 0.
+			 							 "X", StringValue ("ns3::UniformRandomVariable[Min=1.0|Max=6000.0]"),
+										 "Y", StringValue ("ns3::UniformRandomVariable[Min=1.0|Max=6000.0]"),
+										 "Z", StringValue ("ns3::UniformRandomVariable[Min=2|Max=5]"));
+		//mobilityUEs.SetPositionAllocator(positionAllocUEs);
+
 		mobilityUEs.Install(ueNodes);
 	  
 	  
 		NS_LOG_UNCOND("Installing Mobility Model in UABSs...");
 		// Install Mobility Model UABS
+
+		Ptr<ListPositionAllocator> positionAllocUABS = CreateObject<ListPositionAllocator> ();
+		positionAllocUABS->Add (Vector( 1500, 1500 , enBHeight)); //1
+		positionAllocUABS->Add (Vector( 4500, 1500 , enBHeight)); //2
+		positionAllocUABS->Add (Vector( 1500, 4500 , enBHeight)); //3
+		positionAllocUABS->Add (Vector( 4500, 4500 , enBHeight)); //4
+		positionAllocUABS->Add (Vector( 4500, 4500 , enBHeight)); //5
+		positionAllocUABS->Add (Vector( 4500, 4500 , enBHeight)); //6
+
 		MobilityHelper mobilityUABS;
 		mobilityUABS.SetMobilityModel ("ns3::ConstantVelocityMobilityModel");
 		//mobilityUABS.SetMobilityModel ("ns3::RandomWalk2dMobilityModel", 
@@ -589,13 +650,14 @@ double enBHeight = 30;
 								 //"Speed", StringValue ("ns3::ConstantRandomVariable[Constant=1.0]"),
 			//                     "Speed", StringValue ("ns3::UniformRandomVariable[Min=2.0|Max=4.0]"),
 			//		     "Bounds", StringValue ("0|2000|0|2000"));
-		mobilityUABS.SetPositionAllocator ("ns3::GridPositionAllocator",
-										"MinX", DoubleValue (0.0),
-										"MinY", DoubleValue (0.0),
-										"DeltaX", DoubleValue (m_distance),
-										"DeltaY", DoubleValue (m_distance),
-										"GridWidth", UintegerValue (3),
-										"LayoutType", StringValue ("RowFirst"));
+		mobilityenB.SetPositionAllocator(positionAllocUABS);
+		// mobilityUABS.SetPositionAllocator ("ns3::GridPositionAllocator",
+		// 								"MinX", DoubleValue (0.0),
+		// 								"MinY", DoubleValue (0.0),
+		// 								"DeltaX", DoubleValue (m_distance),
+		// 								"DeltaY", DoubleValue (m_distance),
+		// 								"GridWidth", UintegerValue (3),
+		// 								"LayoutType", StringValue ("RowFirst"));
 
 		mobilityUABS.Install(UABSNodes);
 
