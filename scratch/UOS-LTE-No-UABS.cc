@@ -83,6 +83,8 @@ double ue_info_cellid[numberOfUENodes];
 int minSINR = 0;
 string GetClusterCoordinates;
 double Throughput=0.0;
+double PDR=0.0; //Packets Delay Rate
+double PLR=0.0; //Packets Lost Rate
 bool UABSFlag;
 bool UABS_On_Flag = false;
 uint32_t txPacketsum = 0;
