@@ -93,6 +93,8 @@ double Delaysum = 0;
 std::stringstream cmd;
 double UABSHeight = 0;
 double enBHeight = 30;
+uint32_t nRuns = 33;
+uint32_t randomSeed = 1234;
 
 	 
 		NS_LOG_COMPONENT_DEFINE ("UOSLTE");
@@ -426,7 +428,11 @@ double enBHeight = 30;
 			std::cout << "Packets Delivery Ratio: " << ((rxPacketsum * 100) / txPacketsum) << "%" << "\n";
 			std::cout << "Packets Lost Ratio: " << ((LostPacketsum * 100) / txPacketsum) << "%" << "\n";
 			Throughput=iter->second.rxBytes * 8.0 /(iter->second.timeLastRxPacket.GetSeconds()-iter->second.timeFirstTxPacket.GetSeconds())/ 1024;
+			PDR = ((rxPacketsum * 100) / txPacketsum);
+			PLR = ((LostPacketsum * 100) / txPacketsum);
 			datasetThroughput.Add((double)iter->first,(double) Throughput);
+			//datasetPDR.Add((double)iter->first,(double) PDR);
+			//datasetPLR.Add((double)iter->first,(double) PLR);
 			//}
 		}
 
@@ -441,6 +447,17 @@ double enBHeight = 30;
 		{
 		// LogComponentEnable ("EvalvidClient", LOG_LEVEL_INFO);
 		// LogComponentEnable ("EvalvidServer", LOG_LEVEL_INFO);
+
+		CommandLine cmm;
+    	cmm.AddValue("randomSeed", "value of seed for random", randomSeed);
+    	//cmm.AddValue("handoverAlg", "Handover algorith in use", handoverAlg);
+    	cmm.Parse(argc, argv);
+
+		for (uint32_t z = 0; z < nRuns; z++){
+				uint32_t seed = randomSeed + z;
+				SeedManager::SetSeed (seed);
+				NS_LOG_UNCOND("Run # " << std::to_string(z));
+
 
 		Ptr<LteHelper> lteHelper = CreateObject<LteHelper> ();
 		//Ptr<EpcHelper>  epcHelper = CreateObject<EpcHelper> ();
@@ -691,6 +708,7 @@ double enBHeight = 30;
 			}
 		}
 		
+
 		
 		// activate EPSBEARER
 		lteHelper->ActivateDedicatedEpsBearer (ueLteDevs, EpsBearer (EpsBearer::NGBR_VIDEO_TCP_DEFAULT), EpcTft::Default ());
@@ -785,9 +803,9 @@ double enBHeight = 30;
 
 
 		//Gnuplot parameters
-		string fileNameWithNoExtension = "FlowVSThroughput";
-		string graphicsFileName        = fileNameWithNoExtension + ".png";
-		string plotFileName            = fileNameWithNoExtension + ".plt";
+		string fileNameWithNoExtension = "FlowVSThroughput_run_";
+		string graphicsFileName        = fileNameWithNoExtension + std::to_string(z) +".png";
+		string plotFileName            = fileNameWithNoExtension + std::to_string(z)+".plt";
 		string plotTitle               = "Flow vs Throughput";
 		string dataTitle               = "Throughput";
 
@@ -835,6 +853,8 @@ double enBHeight = 30;
 		Simulator::Destroy ();
 	  
 		NS_LOG_INFO ("Done.");
+	}
 		return 0;
 
-	}
+	
+}
