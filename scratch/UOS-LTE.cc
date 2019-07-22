@@ -83,6 +83,8 @@ double ue_info_cellid[numberOfUENodes];
 int minSINR = 0;
 string GetClusterCoordinates;
 double Throughput=0.0;
+double PDR=0.0; //Packets Delay Rate
+double PLR=0.0; //Packets Lost Rate
 bool UABSFlag;
 bool UABS_On_Flag = false;
 uint32_t txPacketsum = 0;
@@ -443,7 +445,11 @@ uint32_t randomSeed = 1234;
 			std::cout << "Packets Delivery Ratio: " << ((rxPacketsum * 100) / txPacketsum) << "%" << "\n";
 			std::cout << "Packets Lost Ratio: " << ((LostPacketsum * 100) / txPacketsum) << "%" << "\n";
 			Throughput=iter->second.rxBytes * 8.0 /(iter->second.timeLastRxPacket.GetSeconds()-iter->second.timeFirstTxPacket.GetSeconds())/ 1024;
+			PDR = ((rxPacketsum * 100) / txPacketsum);
+			PLR = ((LostPacketsum * 100) / txPacketsum);
 			datasetThroughput.Add((double)iter->first,(double) Throughput);
+			//datasetPDR.Add((double)iter->first,(double) PDR);
+			//datasetPLR.Add((double)iter->first,(double) PLR);
 			//}
 		}
 
