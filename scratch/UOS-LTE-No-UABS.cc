@@ -95,7 +95,7 @@ double Delaysum = 0;
 std::stringstream cmd;
 double UABSHeight = 0;
 double enBHeight = 30;
-uint32_t nRuns = 33;
+uint32_t nRuns = 1;
 uint32_t randomSeed = 1234;
 
 	 
@@ -155,9 +155,11 @@ uint32_t randomSeed = 1234;
 			UABS.open(UABSnod.str());   
 			uint16_t enBCellId;
 			uint16_t UABSCellId;
+			uint16_t UEConnectedCellId;
 			Ptr<LteEnbPhy> UABSPhy;
+			
 			int i=0; 
-			//int j=0;
+			int z=0;
 			int k=0;
 
 	 
@@ -188,13 +190,19 @@ uint32_t randomSeed = 1234;
 				uenodes << "UE_" << *j;
 	 
 				std::ofstream UE;
-				UE.open(uenodes.str());*/     
+				UE.open(uenodes.str());*/  
+				Ptr<LteEnbNetDevice> UEConnectedenB;
+				UEConnectedenB = ueLteDevs.Get(z)->GetObject<LteUeNetDevice>()->GetTargetEnb();
+				UEConnectedCellId = UEConnectedenB->GetCellId();
+				NS_LOG_UNCOND("UE "<< std::to_string(z) << ": " << std::to_string(UEConnectedCellId));
+
 				Ptr<Node> object = *j;
 				Ptr<MobilityModel> UEposition = object->GetObject<MobilityModel> ();
 				NS_ASSERT (UEposition != 0);
 				Vector pos = UEposition->GetPosition ();
 				UE << pos.x << "," << pos.y << "," << pos.z << std::endl;
 				//UE.close();
+				z++;
 			}
 			UE.close();
 
