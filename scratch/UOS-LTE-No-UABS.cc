@@ -394,7 +394,7 @@ uint32_t randomSeed = 1234;
 			Simulator::Schedule(Seconds(6), &GetPrioritizedClusters,UABSNodes,  speedUABS,  UABSLteDevs);
 		}
 
-		void ThroughputCalc(Ptr<FlowMonitor> monitor, Ptr<Ipv4FlowClassifier> classifier,Gnuplot2dDataset datasetThroughput)
+		void ThroughputCalc(Ptr<FlowMonitor> monitor, Ptr<Ipv4FlowClassifier> classifier,Gnuplot2dDataset datasetThroughput,Gnuplot2dDataset datasetPDR,Gnuplot2dDataset datasetPLR)
 		{
 
 		monitor->CheckForLostPackets ();
@@ -433,8 +433,8 @@ uint32_t randomSeed = 1234;
 			PDR = ((rxPacketsum * 100) / txPacketsum);
 			PLR = ((LostPacketsum * 100) / txPacketsum);
 			datasetThroughput.Add((double)iter->first,(double) Throughput);
-			//datasetPDR.Add((double)iter->first,(double) PDR);
-			//datasetPLR.Add((double)iter->first,(double) PLR);
+			datasetPDR.Add((double)iter->first,(double) PDR);
+			datasetPLR.Add((double)iter->first,(double) PLR);
 			//}
 		}
 
@@ -804,26 +804,63 @@ uint32_t randomSeed = 1234;
 
 
 
-		//Gnuplot parameters
+		//Gnuplot parameters for Throughput
 		string fileNameWithNoExtension = "FlowVSThroughput_run_";
 		string graphicsFileName        = fileNameWithNoExtension + std::to_string(z) +".png";
 		string plotFileName            = fileNameWithNoExtension + std::to_string(z)+".plt";
 		string plotTitle               = "Flow vs Throughput";
 		string dataTitle               = "Throughput";
+		//Gnuplot parameters for PDR
+		string fileNameWithNoExtensionPDR = "PDR_run_";
+		string graphicsFileNamePDR        = fileNameWithNoExtensionPDR + std::to_string(z) +".png";
+		string plotFileNamePDR            = fileNameWithNoExtensionPDR + std::to_string(z)+".plt";
+		string plotTitlePDR               = "PDR Mean"; //to check later
+		string dataTitlePDR               = "Packet Delivery Ratio Mean";
+		//Gnuplot parameters for PLR
+		string fileNameWithNoExtensionPLR = "PLR_run_";
+		string graphicsFileNamePLR        = fileNameWithNoExtensionPLR + std::to_string(z) +".png";
+		string plotFileNamePLR            = fileNameWithNoExtensionPLR + std::to_string(z)+".plt";
+		string plotTitlePLR               = "PLR Mean";
+		string dataTitlePLR               = "Packet Lost Ratio Mean";
 
 		// Instantiate the plot and set its title.
+		//Throughput
 		Gnuplot gnuplot (graphicsFileName);
 		gnuplot.SetTitle (plotTitle);
+		//PDR
+		Gnuplot gnuplotPDR (graphicsFileNamePDR);
+		gnuplotPDR.SetTitle (plotTitlePDR);
+		//PLR
+		Gnuplot gnuplotPLR (graphicsFileNamePLR);
+		gnuplotPLR.SetTitle (plotTitlePLR);
 
 		// Make the graphics file, which the plot file will be when it is used with Gnuplot, be a PNG file.
+		//Throughput
 		gnuplot.SetTerminal ("png");
+		//PDR
+		gnuplotPDR.SetTerminal ("png");
+		//PLR
+		gnuplotPLR.SetTerminal ("png");
 
 		// Set the labels for each axis.
+		//Throughput
 		gnuplot.SetLegend ("Flow", "Throughput");
+		//PDR
+		gnuplotPDR.SetLegend ("Flow", "Packet Delivery Ratio (%)");
+		//PLR
+		gnuplotPLR.SetLegend ("Flow", "Packet Lost Ratio (%)");
 
 		Gnuplot2dDataset datasetThroughput;
+		Gnuplot2dDataset datasetPDR;
+		Gnuplot2dDataset datasetPLR;
+
 		datasetThroughput.SetTitle (dataTitle);
+		datasetPDR.SetTitle (dataTitlePDR);
+		datasetPLR.SetTitle (dataTitlePLR);
+
 		datasetThroughput.SetStyle (Gnuplot2dDataset::LINES_POINTS);
+		datasetPDR.SetStyle (Gnuplot2dDataset::LINES_POINTS);
+		datasetPLR.SetStyle (Gnuplot2dDataset::LINES_POINTS);
 
 		//Flow Monitor Setup
 		FlowMonitorHelper flowmon;
@@ -836,20 +873,38 @@ uint32_t randomSeed = 1234;
 		Simulator::Run ();
 
 		// Print per flow statistics
-		ThroughputCalc(monitor,classifier,datasetThroughput);
+		ThroughputCalc(monitor,classifier,datasetThroughput,datasetPDR,datasetPLR);
 
 		//Gnuplot ...continued
- 
+ 		//Throughput
 		gnuplot.AddDataset (datasetThroughput);
+		//PDR
+		gnuplotPDR.AddDataset (datasetPDR);
+		//PLR
+		gnuplotPLR.AddDataset (datasetPLR);
 
 		// Open the plot file.
-		ofstream plotFile (plotFileName.c_str());
-
+		//Throughput
+		ofstream plotFileThroughtput (plotFileName.c_str());
 		// Write the plot file.
-		gnuplot.GenerateOutput (plotFile);
-
+		gnuplot.GenerateOutput (plotFileThroughtput);
 		// Close the plot file.
-		plotFile.close ();
+		plotFileThroughtput.close ();
+		
+		//PDR
+		ofstream plotFilePDR (plotFileNamePDR.c_str());
+		// Write the plot file.
+		gnuplotPDR.GenerateOutput (plotFilePDR);
+		// Close the plot file.
+		plotFilePDR.close ();
+
+		//PLR
+		ofstream plotFilePLR (plotFileNamePLR.c_str());
+		// Write the plot file.
+		gnuplotPLR.GenerateOutput (plotFilePLR);
+		// Close the plot file.
+		plotFilePLR.close ();
+
 
 		
 		Simulator::Destroy ();
@@ -859,4 +914,4 @@ uint32_t randomSeed = 1234;
 		return 0;
 
 	
-}
+} 
