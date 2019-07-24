@@ -462,7 +462,7 @@ int enBpowerFailure=0;
 
 		}
 
-		void enB_Failure (NetDeviceContainer enbLteDevs)
+		void enB_Failure (NetDeviceContainer enbLteDevs, int enBpowerFailure )
 		{
 			//Set Power of eNodeBs  
 			Ptr<LteEnbPhy> enodeBPhy;
@@ -820,7 +820,7 @@ int enBpowerFailure=0;
 		//Scenario 1: Failure of an enB, overloads the system:
 		if (scen == 1)
 		{
-			Simulator::Schedule(Seconds(30), &enB_Failure,enbLteDevs);
+			Simulator::Schedule(Seconds(5), &enB_Failure,enbLteDevs,enBpowerFailure);
 		}
 
 	
