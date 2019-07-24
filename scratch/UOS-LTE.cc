@@ -64,7 +64,7 @@ using namespace ns3;
 const uint16_t numberOfeNodeBNodes = 4;
 const uint16_t numberOfUENodes = 245; //Number of user to test: 245, 392, 490 (The number of users and their traffic model follow the parameters recommended by the 3GPP)
 const uint16_t numberOfUABS = 6;
-double simTime = 300;
+double simTime = 100; //300 secs
 const int m_distance = 2000; //m_distance between enBs towers.
 // Inter packet interval in ms
 // double interPacketInterval = 1;
@@ -95,8 +95,12 @@ double Delaysum = 0;
 std::stringstream cmd;
 double UABSHeight = 30.0;
 double enBHeight = 30.0;
-uint32_t nRuns = 1;
+uint32_t nRuns = 2;
 uint32_t randomSeed = 1234;
+int scen = 0; 
+// [Scenarios --> Scen[0]: General Scenario, with no UABS support, network ok;  Scen[1]: one enB damaged (off) and no UABS;
+// Scen[2]: one enB damaged (off) with supporting UABS; Scen[3]:Overloaded enB(s) with no UABS support; Scen[4]:Overloaded enB(s) with UABS support; ]
+int enBpowerFailure=0;
 
 	 
 		NS_LOG_COMPONENT_DEFINE ("UOSLTE");
@@ -458,6 +462,48 @@ uint32_t randomSeed = 1234;
 
 		}
 
+		void enB_Failure (NetDeviceContainer enbLteDevs)
+		{
+			//Set Power of eNodeBs  
+			Ptr<LteEnbPhy> enodeBPhy;
+			uint16_t enBCellId; 
+			
+
+			if  (enBpowerFailure == 0)
+			{
+			//for( uint16_t i = 0; i < enbLteDevs.GetN(); i++) 
+			//{
+				// To simulate a failure we set the Tx Power to 0w in the enb[0].
+				enBCellId = enbLteDevs.Get(0)->GetObject<LteEnbNetDevice>()->GetCellId();
+				enodeBPhy = enbLteDevs.Get(0)->GetObject<LteEnbNetDevice>()->GetPhy();
+				enodeBPhy->SetTxPower(20);
+				NS_LOG_UNCOND("enB " << std::to_string(enBCellId) << " is presenting power fault! [enbpower: 20]");
+				enBpowerFailure = 1;
+				Simulator::Schedule(Seconds(5), &enB_Failure,enbLteDevs,enBpowerFailure);
+			
+			//}
+			}
+			else if (enBpowerFailure == 1)
+			{
+				enBCellId = enbLteDevs.Get(0)->GetObject<LteEnbNetDevice>()->GetCellId();
+				enodeBPhy = enbLteDevs.Get(0)->GetObject<LteEnbNetDevice>()->GetPhy();
+				enodeBPhy->SetTxPower(10);
+				NS_LOG_UNCOND("enB " << std::to_string(enBCellId) << " is presenting power fault! [enbpower: 10]");
+				enBpowerFailure = 2;
+				Simulator::Schedule(Seconds(5), &enB_Failure,enbLteDevs,enBpowerFailure);
+
+			}
+			else if (enBpowerFailure == 2)
+			{
+				enBCellId = enbLteDevs.Get(0)->GetObject<LteEnbNetDevice>()->GetCellId();
+				enodeBPhy = enbLteDevs.Get(0)->GetObject<LteEnbNetDevice>()->GetPhy();
+				enodeBPhy->SetTxPower(0);
+				NS_LOG_UNCOND("enB " << std::to_string(enBCellId) << " out of service: Power Failure!");
+
+			}
+
+		}
+
 
 
 		//----------------------MAIN FUNCTION---------------------------//
@@ -468,7 +514,10 @@ uint32_t randomSeed = 1234;
 
 		CommandLine cmm;
     	cmm.AddValue("randomSeed", "value of seed for random", randomSeed);
-    	//cmm.AddValue("handoverAlg", "Handover algorith in use", handoverAlg);
+    	cmm.AddValue("scen", "scenario to run", scen);
+    	cmm.AddValue("nRuns", "Number of runs", nRuns);
+    	//cmm.AddValue("numberOfUABS", "Number of UABS", numberOfUABS);
+    	//cmm.AddValue("numberOfeNodeBNodes", "Number of enBs", numberOfeNodeBNodes);
     	cmm.Parse(argc, argv);
 
 		for (uint32_t z = 0; z < nRuns; z++){
@@ -514,10 +563,10 @@ uint32_t randomSeed = 1234;
 
 		 //Antenna parameters  (cuando activo la antena da error de " what():  vector::_M_range_check: __n (which is 4) >= this->size() (which is 4)" )
 
-		lteHelper->SetEnbAntennaModelType("ns3::CosineAntennaModel");
-		lteHelper->SetEnbAntennaModelAttribute("Orientation", DoubleValue(0));
-		lteHelper->SetEnbAntennaModelAttribute("Beamwidth", DoubleValue(60));
-		lteHelper->SetEnbAntennaModelAttribute("MaxGain", DoubleValue(0.0));
+		// lteHelper->SetEnbAntennaModelType("ns3::CosineAntennaModel");
+		// lteHelper->SetEnbAntennaModelAttribute("Orientation", DoubleValue(0));
+		// lteHelper->SetEnbAntennaModelAttribute("Beamwidth", DoubleValue(60));
+		// lteHelper->SetEnbAntennaModelAttribute("MaxGain", DoubleValue(0.0));
 
 		//Pathlossmodel
 		//lteHelper->SetAttribute("PathlossModel",StringValue("ns3::NakagamiPropagationLossModel"));
@@ -596,8 +645,6 @@ uint32_t randomSeed = 1234;
 		MobilityHelper mobilityenB;
 		mobilityenB.SetMobilityModel("ns3::ConstantPositionMobilityModel");
 		mobilityenB.SetPositionAllocator(positionAllocenB);
-
-
 		mobilityenB.Install(enbNodes);
 
 
@@ -621,48 +668,49 @@ uint32_t randomSeed = 1234;
 										 "Y", StringValue ("ns3::UniformRandomVariable[Min=1.0|Max=6000.0]"),
 										 "Z", StringValue ("ns3::UniformRandomVariable[Min=0.5|Max=1.50]"));
 		//mobilityUEs.SetPositionAllocator(positionAllocUEs);
-
-
 		mobilityUEs.Install(ueNodes);
 		
 	
-	  
-		NS_LOG_UNCOND("Installing Mobility Model in UABSs...");
-		// ----------------Install Mobility Model UABS--------------------//
+	  	if (scen == 2 || scen == 4)
+	  	{
+			NS_LOG_UNCOND("Installing Mobility Model in UABSs...");
+			// ----------------Install Mobility Model UABS--------------------//
 
-		Ptr<ListPositionAllocator> positionAllocUABS = CreateObject<ListPositionAllocator> ();
-		positionAllocUABS->Add (Vector( 1500, 1500 , enBHeight)); //1
-		positionAllocUABS->Add (Vector( 4500, 1500 , enBHeight)); //2
-		positionAllocUABS->Add (Vector( 1500, 4500 , enBHeight)); //3
-		positionAllocUABS->Add (Vector( 4500, 4500 , enBHeight)); //4
-		positionAllocUABS->Add (Vector( 4500, 4500 , enBHeight)); //5
-		positionAllocUABS->Add (Vector( 4500, 4500 , enBHeight)); //6
+			Ptr<ListPositionAllocator> positionAllocUABS = CreateObject<ListPositionAllocator> ();
+			positionAllocUABS->Add (Vector( 1500, 1500 , enBHeight)); //1
+			positionAllocUABS->Add (Vector( 4500, 1500 , enBHeight)); //2
+			positionAllocUABS->Add (Vector( 1500, 4500 , enBHeight)); //3
+			positionAllocUABS->Add (Vector( 4500, 4500 , enBHeight)); //4
+			positionAllocUABS->Add (Vector( 4500, 4500 , enBHeight)); //5
+			positionAllocUABS->Add (Vector( 4500, 4500 , enBHeight)); //6
 
-		MobilityHelper mobilityUABS;
-		mobilityUABS.SetMobilityModel ("ns3::ConstantVelocityMobilityModel");
-		//mobilityUABS.SetMobilityModel ("ns3::RandomWalk2dMobilityModel", 
-		//                         "Mode", StringValue ("Time"),
-		  //                       "Time", StringValue ("5s"),
-								 //"Speed", StringValue ("ns3::ConstantRandomVariable[Constant=1.0]"),
-			//                     "Speed", StringValue ("ns3::UniformRandomVariable[Min=2.0|Max=4.0]"),
-			//		     "Bounds", StringValue ("0|2000|0|2000"));
-		mobilityUABS.SetPositionAllocator(positionAllocUABS);
-		// mobilityUABS.SetPositionAllocator ("ns3::GridPositionAllocator",
-		// 								"MinX", DoubleValue (0.0),
-		// 								"MinY", DoubleValue (0.0),
-		// 								"DeltaX", DoubleValue (m_distance),
-		// 								"DeltaY", DoubleValue (m_distance),
-		// 								"GridWidth", UintegerValue (3),
-		// 								"LayoutType", StringValue ("RowFirst"));
+			MobilityHelper mobilityUABS;
+			mobilityUABS.SetMobilityModel ("ns3::ConstantVelocityMobilityModel");
+			//mobilityUABS.SetMobilityModel ("ns3::RandomWalk2dMobilityModel", 
+			//                         "Mode", StringValue ("Time"),
+			  //                       "Time", StringValue ("5s"),
+									 //"Speed", StringValue ("ns3::ConstantRandomVariable[Constant=1.0]"),
+				//                     "Speed", StringValue ("ns3::UniformRandomVariable[Min=2.0|Max=4.0]"),
+				//		     "Bounds", StringValue ("0|2000|0|2000"));
+			mobilityUABS.SetPositionAllocator(positionAllocUABS);
+			// mobilityUABS.SetPositionAllocator ("ns3::GridPositionAllocator",
+			// 								"MinX", DoubleValue (0.0),
+			// 								"MinY", DoubleValue (0.0),
+			// 								"DeltaX", DoubleValue (m_distance),
+			// 								"DeltaY", DoubleValue (m_distance),
+			// 								"GridWidth", UintegerValue (3),
+			// 								"LayoutType", StringValue ("RowFirst"));
 
-		mobilityUABS.Install(UABSNodes);
-
+			mobilityUABS.Install(UABSNodes);
+		}
 					  
 
 		// --------------------Install LTE Devices to the nodes----------------------//
 		NetDeviceContainer enbLteDevs = lteHelper->InstallEnbDevice (enbNodes);
 		NetDeviceContainer ueLteDevs = lteHelper->InstallUeDevice (ueNodes);
+		//if (scen == 2 || scen == 4){
 		NetDeviceContainer UABSLteDevs = lteHelper->InstallEnbDevice (UABSNodes);
+		//}
 
 		
 
@@ -680,8 +728,11 @@ uint32_t randomSeed = 1234;
 			enodeBPhy->SetTxPower(eNodeBTxPower);
 			
 		}
-		// //Set Power of UABS, initially 0 to simulate a turned off UABS.
-		Ptr<LteEnbPhy> UABSPhy;
+		
+		//Set Power of UABS, initially 0 to simulate a turned off UABS.
+		if (scen == 2 || scen == 4)
+		{
+			Ptr<LteEnbPhy> UABSPhy;
 	 
 			for( uint16_t i = 0; i < UABSLteDevs.GetN(); i++) 
 			{
@@ -690,6 +741,7 @@ uint32_t randomSeed = 1234;
 				// NS_LOG_UNCOND("UABS TX Power: ");
 				// NS_LOG_UNCOND(UABSPhy->GetTxPower());
 			}
+		}
 
 
 	  //Get Power of eNodeBs and UABSs
@@ -713,7 +765,8 @@ uint32_t randomSeed = 1234;
 	  ueIpIface = epcHelper->AssignUeIpv4Address (NetDeviceContainer (ueLteDevs));
 	  
 	  // Assign IP address to UEs, and install applications
-	  for (uint16_t i = 0; i < ueNodes.GetN(); i++) {
+	  for (uint16_t i = 0; i < ueNodes.GetN(); i++) 
+	  {
 		Ptr<Node> ueNode = ueNodes.Get (i);
 			// Set the default gateway for the UE
 			Ptr<Ipv4StaticRouting> ueStaticRouting = ipv4RoutingHelper.GetStaticRouting (ueNode->GetObject<Ipv4> ());
@@ -728,18 +781,22 @@ uint32_t randomSeed = 1234;
 		
 		// this enables handover for macro eNBs
 		lteHelper->AddX2Interface (enbNodes); // X2 interface for macrocells
-		lteHelper->AddX2Interface (UABSNodes); // X2 interface for UABSs
 
-		//Set a X2 interface between UABS and all enBs to enable handover.
-		for (uint16_t i = 0; i < UABSNodes.GetN(); i++) 
+		if (scen == 2 || scen == 4)
 		{
-			Ptr<Node> PosUABS = UABSNodes.Get(i)->GetObject<Node>();
-			for (uint16_t j = 0; j < enbNodes.GetN(); j++) 
+			lteHelper->AddX2Interface (UABSNodes); // X2 interface for UABSs
+
+			//Set a X2 interface between UABS and all enBs to enable handover.
+			for (uint16_t i = 0; i < UABSNodes.GetN(); i++) 
 			{
-				Ptr<Node> PosUABS = enbNodes.Get(j)->GetObject<Node>();
-				//Set a X2 interface between UABS and all enBs	
-				lteHelper->AddX2Interface(UABSNodes.Get(i), enbNodes.Get(j));
-				NS_LOG_UNCOND("Creating X2 Interface between UABS " << UABSNodes.Get(i) << " and enB " << enbNodes.Get(j));
+				Ptr<Node> PosUABS = UABSNodes.Get(i)->GetObject<Node>();
+				for (uint16_t j = 0; j < enbNodes.GetN(); j++) 
+				{
+					Ptr<Node> PosUABS = enbNodes.Get(j)->GetObject<Node>();
+					//Set a X2 interface between UABS and all enBs	
+					lteHelper->AddX2Interface(UABSNodes.Get(i), enbNodes.Get(j));
+					NS_LOG_UNCOND("Creating X2 Interface between UABS " << UABSNodes.Get(i) << " and enB " << enbNodes.Get(j));
+				}
 			}
 		}
 
@@ -755,8 +812,16 @@ uint32_t randomSeed = 1234;
 
 
 		//Run Python Command to get centroids
-		//GetPrioritizedClusters();
-		Simulator::Schedule(Seconds(6), &GetPrioritizedClusters, UABSNodes,  speedUABS,  UABSLteDevs);
+		if (scen == 2 || scen == 4)
+		{
+			Simulator::Schedule(Seconds(6), &GetPrioritizedClusters, UABSNodes,  speedUABS,  UABSLteDevs);
+		}
+
+		//Scenario 1: Failure of an enB, overloads the system:
+		if (scen == 1)
+		{
+			Simulator::Schedule(Seconds(30), &enB_Failure,enbLteDevs);
+		}
 
 	
 		NS_LOG_UNCOND("Resquesting-sending Video...");
