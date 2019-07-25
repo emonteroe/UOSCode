@@ -457,7 +457,7 @@ int enBpowerFailure=0;
 			//}
 		}
 
-		monitor->SerializeToXmlFile("UOSLTE-FlowMonitor.flowmon",true,true);
+		//monitor->SerializeToXmlFile("UOSLTE-FlowMonitor.flowmon",true,true);
 
 
 		}
@@ -502,6 +502,59 @@ int enBpowerFailure=0;
 
 			}
 
+		}
+
+
+		void NotifyHandoverStartUe (std::string context,
+                       uint64_t imsi,
+                       uint16_t cellId,
+                       uint16_t rnti,
+                       uint16_t targetCellId)
+		{
+  			std::cout << Simulator::Now ().GetSeconds () << " " << context
+			          << " UE IMSI " << imsi
+			          << ": previously connected to CellId " << cellId
+			          << " with RNTI " << rnti
+			          << ", doing handover to CellId " << targetCellId
+			          << std::endl;
+		}
+
+		void NotifyHandoverEndOkUe (std::string context,
+                       uint64_t imsi,
+                       uint16_t cellId,
+                       uint16_t rnti)
+		{
+		  	std::cout << Simulator::Now ().GetSeconds () << " " << context
+		              << " UE IMSI " << imsi
+		              << ": successful handover to CellId " << cellId
+		              << " with RNTI " << rnti
+		             << std::endl;
+		}
+
+		void NotifyHandoverStartEnb (std::string context,
+                        uint64_t imsi,
+                        uint16_t cellId,
+                        uint16_t rnti,
+                        uint16_t targetCellId)
+		{
+			std::cout << Simulator::Now ().GetSeconds () << " " << context
+			          << " eNB CellId " << cellId
+			          << ": start handover of UE with IMSI " << imsi
+			          << " RNTI " << rnti
+			          << " to CellId " << targetCellId
+			          << std::endl;
+		}
+
+		void NotifyHandoverEndOkEnb (std::string context,
+                        uint64_t imsi,
+                        uint16_t cellId,
+                        uint16_t rnti)
+		{
+			 std::cout << Simulator::Now ().GetSeconds () << " " << context
+			            << " eNB CellId " << cellId
+			            << ": completed handover of UE with IMSI " << imsi
+			            << " RNTI " << rnti
+			            << std::endl;
 		}
 
 
@@ -900,6 +953,10 @@ int enBpowerFailure=0;
 		Config::Connect ("/NodeList/*/DeviceList/*/LteEnbRrc/RecvMeasurementReport", MakeCallback (&NotifyMeasureMentReport)); 
 		//Config::Connect ("/NodeList/*/DeviceList/*/LteUePhy/ReportCurrentCellRsrpSinr",MakeCallback (&ns3::PhyStatsCalculator::ReportCurrentCellRsrpSinrCallback));
 		Config::Connect ("/NodeList/*/DeviceList/*/LteUePhy/ReportUeSinr",MakeCallback (&ns3::PhyStatsCalculator::ReportUeSinr));
+		// Config::Connect ("/NodeList/*/DeviceList/*/LteEnbRrc/HandoverStart",MakeCallback (&NotifyHandoverStartEnb));
+		// Config::Connect ("/NodeList/*/DeviceList/*/LteUeRrc/HandoverStart",MakeCallback (&NotifyHandoverStartUe));
+		// Config::Connect ("/NodeList/*/DeviceList/*/LteEnbRrc/HandoverEndOk",MakeCallback (&NotifyHandoverEndOkEnb));
+		// Config::Connect ("/NodeList/*/DeviceList/*/LteUeRrc/HandoverEndOk",MakeCallback (&NotifyHandoverEndOkUe));
 
 
 
@@ -971,6 +1028,7 @@ int enBpowerFailure=0;
 
 		// Print per flow statistics
 		ThroughputCalc(monitor,classifier,datasetThroughput,datasetPDR,datasetPLR);
+		monitor->SerializeToXmlFile("UOSLTE-FlowMonitor_run_"+std::to_string(z)+".xml",true,true);
 
 		//Gnuplot ...continued
  		//Throughput
