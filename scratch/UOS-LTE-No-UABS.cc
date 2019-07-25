@@ -448,16 +448,34 @@ int enBpowerFailure=0;
 			//}
 		}
 
-		monitor->SerializeToXmlFile("UOSLTE-FlowMonitor.flowmon",true,true);
+		//monitor->SerializeToXmlFile("UOSLTE-FlowMonitor.xml",true,true);
 
 
 		}
 
-		void enB_Failure (NetDeviceContainer enbLteDevs, int enBpowerFailure )
+		void enB_Failure (NetDeviceContainer enbLteDevs,NetDeviceContainer ueLteDevs, Ptr<LteHelper> lteHelper,int enBpowerFailure )
 		{
 			//Set Power of eNodeBs  
 			Ptr<LteEnbPhy> enodeBPhy;
 			uint16_t enBCellId; 
+			uint64_t UeHandoverImsi;
+			Ptr<LteUeNetDevice> UeToHandoff;
+			
+			for (uint16_t i = 0; i < ueLteDevs.GetN(); i++)
+			{	
+				UeToHandoff = ueLteDevs.Get(i)->GetObject<LteUeNetDevice>();
+				//UeHandoverImsi = ueLteDevs.Get(i)->GetObject<LteUeNetDevice>()->GetImsi();//GetTargetEnb()->GetCellId();
+				UeHandoverImsi = ueLteDevs.Get(i)->GetObject<LteUeNetDevice>()->GetTargetEnb()->GetCellId();
+				
+				//if (ue_info_cellid[UeHandoverImsi-1] == 1)
+				if (UeHandoverImsi == 1)
+				{
+					Ptr<LteEnbNetDevice> Source_enB = enbLteDevs.Get(0)->GetObject<LteEnbNetDevice>();
+					Ptr<LteEnbNetDevice> Target_enB = enbLteDevs.Get(1)->GetObject<LteEnbNetDevice>();
+					lteHelper->HandoverRequest(Seconds(0.1),UeToHandoff,Source_enB,Target_enB);
+					NS_LOG_UNCOND("Ue " << std::to_string(UeHandoverImsi) <<" handover triggered from enB " << std::to_string(Source_enB->GetCellId()) << " to enB " << std::to_string(Target_enB->GetCellId()));
+				}
+			}	
 			
 
 			if  (enBpowerFailure == 0)
@@ -467,23 +485,23 @@ int enBpowerFailure=0;
 				// To simulate a failure we set the Tx Power to 0w in the enb[0].
 				enBCellId = enbLteDevs.Get(0)->GetObject<LteEnbNetDevice>()->GetCellId();
 				enodeBPhy = enbLteDevs.Get(0)->GetObject<LteEnbNetDevice>()->GetPhy();
-				enodeBPhy->SetTxPower(20);
-				NS_LOG_UNCOND("enB " << std::to_string(enBCellId) << " is presenting power fault! [enbpower: 20]");
-				enBpowerFailure = 1;
-				Simulator::Schedule(Seconds(5), &enB_Failure,enbLteDevs,enBpowerFailure);
+				//enodeBPhy->SetTxPower(20);
+				//NS_LOG_UNCOND("enB " << std::to_string(enBCellId) << " is presenting power fault! [enbpower: 20]");
+				enBpowerFailure = 2;
+				Simulator::Schedule(Seconds(5), &enB_Failure,enbLteDevs,ueLteDevs,lteHelper,enBpowerFailure);
 			
 			//}
 			}
-			else if (enBpowerFailure == 1)
-			{
-				enBCellId = enbLteDevs.Get(0)->GetObject<LteEnbNetDevice>()->GetCellId();
-				enodeBPhy = enbLteDevs.Get(0)->GetObject<LteEnbNetDevice>()->GetPhy();
-				enodeBPhy->SetTxPower(10);
-				NS_LOG_UNCOND("enB " << std::to_string(enBCellId) << " is presenting power fault! [enbpower: 10]");
-				enBpowerFailure = 2;
-				Simulator::Schedule(Seconds(5), &enB_Failure,enbLteDevs,enBpowerFailure);
+			// else if (enBpowerFailure == 1)
+			// {
+			// 	enBCellId = enbLteDevs.Get(0)->GetObject<LteEnbNetDevice>()->GetCellId();
+			// 	enodeBPhy = enbLteDevs.Get(0)->GetObject<LteEnbNetDevice>()->GetPhy();
+			// 	enodeBPhy->SetTxPower(10);
+			// 	NS_LOG_UNCOND("enB " << std::to_string(enBCellId) << " is presenting power fault! [enbpower: 10]");
+			// 	enBpowerFailure = 2;
+			// 	Simulator::Schedule(Seconds(30), &enB_Failure,enbLteDevs,ueLteDevs,lteHelper,enBpowerFailure);
 
-			}
+			// }
 			else if (enBpowerFailure == 2)
 			{
 				enBCellId = enbLteDevs.Get(0)->GetObject<LteEnbNetDevice>()->GetCellId();
@@ -494,6 +512,58 @@ int enBpowerFailure=0;
 			}
 
 
+		}
+
+		void NotifyHandoverStartUe (std::string context,
+                       uint64_t imsi,
+                       uint16_t cellId,
+                       uint16_t rnti,
+                       uint16_t targetCellId)
+		{
+  			std::cout << Simulator::Now ().GetSeconds () << " " << context
+			          << " UE IMSI " << imsi
+			          << ": previously connected to CellId " << cellId
+			          << " with RNTI " << rnti
+			          << ", doing handover to CellId " << targetCellId
+			          << std::endl;
+		}
+
+		void NotifyHandoverEndOkUe (std::string context,
+                       uint64_t imsi,
+                       uint16_t cellId,
+                       uint16_t rnti)
+		{
+		  	std::cout << Simulator::Now ().GetSeconds () << " " << context
+		              << " UE IMSI " << imsi
+		              << ": successful handover to CellId " << cellId
+		              << " with RNTI " << rnti
+		             << std::endl;
+		}
+
+		void NotifyHandoverStartEnb (std::string context,
+                        uint64_t imsi,
+                        uint16_t cellId,
+                        uint16_t rnti,
+                        uint16_t targetCellId)
+		{
+			std::cout << Simulator::Now ().GetSeconds () << " " << context
+			          << " eNB CellId " << cellId
+			          << ": start handover of UE with IMSI " << imsi
+			          << " RNTI " << rnti
+			          << " to CellId " << targetCellId
+			          << std::endl;
+		}
+
+		void NotifyHandoverEndOkEnb (std::string context,
+                        uint64_t imsi,
+                        uint16_t cellId,
+                        uint16_t rnti)
+		{
+			 std::cout << Simulator::Now ().GetSeconds () << " " << context
+			            << " eNB CellId " << cellId
+			            << ": completed handover of UE with IMSI " << imsi
+			            << " RNTI " << rnti
+			            << std::endl;
 		}
 
 
@@ -548,8 +618,8 @@ int enBpowerFailure=0;
 		// lteHelper->SetHandoverAlgorithmAttribute ("ServingCellThreshold", UintegerValue (30));
 		// lteHelper->SetHandoverAlgorithmAttribute ("NeighbourCellOffset", UintegerValue (2));                                      
 		lteHelper->SetHandoverAlgorithmType ("ns3::A3RsrpHandoverAlgorithm"); // Handover by Reference Signal Reference Power (RSRP)
-		lteHelper->SetHandoverAlgorithmAttribute ("TimeToTrigger", TimeValue (MilliSeconds (256))); //default: 256
-		lteHelper->SetHandoverAlgorithmAttribute ("Hysteresis", DoubleValue (3.0)); //default: 3.0
+		lteHelper->SetHandoverAlgorithmAttribute ("TimeToTrigger", TimeValue (MilliSeconds (160))); //default: 256
+		lteHelper->SetHandoverAlgorithmAttribute ("Hysteresis", DoubleValue (1.0)); //default: 3.0
 		
 
 
@@ -782,9 +852,11 @@ int enBpowerFailure=0;
 		}
 
 		//Scenario 1: Failure of an enB, overloads the system:
-		if (scen == 1)
-		{
-			Simulator::Schedule(Seconds(30), &enB_Failure,enbLteDevs,enBpowerFailure);
+		if (scen == 1 || scen == 2)
+		{	
+				
+			//Simulator::Schedule(Seconds(30), &enB_Failure,enbLteDevs,ueLteDevs,lteHelper,enBpowerFailure);
+			Simulator::Schedule(Seconds(10), &enB_Failure,enbLteDevs,ueLteDevs,lteHelper,enBpowerFailure);
 		}
 
 	
@@ -864,6 +936,10 @@ int enBpowerFailure=0;
 		Config::Connect ("/NodeList/*/DeviceList/*/LteEnbRrc/RecvMeasurementReport", MakeCallback (&NotifyMeasureMentReport)); 
 		//Config::Connect ("/NodeList/*/DeviceList/*/LteUePhy/ReportCurrentCellRsrpSinr",MakeCallback (&ns3::PhyStatsCalculator::ReportCurrentCellRsrpSinrCallback));
 		Config::Connect ("/NodeList/*/DeviceList/*/LteUePhy/ReportUeSinr",MakeCallback (&ns3::PhyStatsCalculator::ReportUeSinr));
+		Config::Connect ("/NodeList/*/DeviceList/*/LteEnbRrc/HandoverStart",MakeCallback (&NotifyHandoverStartEnb));
+		Config::Connect ("/NodeList/*/DeviceList/*/LteUeRrc/HandoverStart",MakeCallback (&NotifyHandoverStartUe));
+		Config::Connect ("/NodeList/*/DeviceList/*/LteEnbRrc/HandoverEndOk",MakeCallback (&NotifyHandoverEndOkEnb));
+		Config::Connect ("/NodeList/*/DeviceList/*/LteUeRrc/HandoverEndOk",MakeCallback (&NotifyHandoverEndOkUe));
 
 
 
@@ -937,6 +1013,7 @@ int enBpowerFailure=0;
 
 		// Print per flow statistics
 		ThroughputCalc(monitor,classifier,datasetThroughput,datasetPDR,datasetPLR);
+		monitor->SerializeToXmlFile("UOSLTE-FlowMonitor_run_"+std::to_string(z)+".xml",true,true);
 
 		//Gnuplot ...continued
  		//Throughput
