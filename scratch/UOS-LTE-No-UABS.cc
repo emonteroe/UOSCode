@@ -63,6 +63,7 @@ using namespace ns3;
 
 const uint16_t numberOfeNodeBNodes = 4;
 const uint16_t numberOfUENodes = 100; //Number of user to test: 245, 392, 490 (The number of users and their traffic model follow the parameters recommended by the 3GPP)
+const uint16_t numberOfOverloadUENodes = 20; // user that will be connected to an specific enB. 
 const uint16_t numberOfUABS = 0;
 double simTime = 100; //300 secs
 const int m_distance = 2000; //m_distance between enBs towers.
@@ -80,7 +81,7 @@ double ue_info[numberOfeNodeBNodes + numberOfUABS][numberOfUENodes]; //UE Connec
 double ue_imsi_sinr[numberOfUENodes]; //UE Connection Status Register Matrix
 double ue_imsi_sinr_linear[numberOfUENodes];
 double ue_info_cellid[numberOfUENodes];
-int minSINR = 0;
+int minSINR = 0; //  minimum SINR to be considered to clusterization
 string GetClusterCoordinates;
 double Throughput=0.0;
 double PDR=0.0; //Packets Delay Rate
@@ -141,19 +142,23 @@ int enBpowerFailure=0;
 		}
 
 
-		void GetPositionUEandenB(NodeContainer ueNodes, NodeContainer enbNodes, NodeContainer UABSNodes, NetDeviceContainer enbLteDevs,NetDeviceContainer UABSLteDevs, NetDeviceContainer ueLteDevs)
+		void GetPositionUEandenB(NodeContainer ueNodes, NodeContainer enbNodes, NodeContainer UABSNodes, NetDeviceContainer enbLteDevs,NetDeviceContainer UABSLteDevs, NetDeviceContainer ueLteDevs)//,NetDeviceContainer OverloadingUeLteDevs, NodeContainer ueOverloadNodes)
 		{
 		// iterate our nodes and print their position.
 			std::stringstream enodeB;
 			enodeB << "enBs"; 
 			std::stringstream uenodes;
 			uenodes << "LTEUEs";
+			std::stringstream OverloadingUenodes;
+			OverloadingUenodes << "LTE_Overloading_UEs";
 			std::stringstream UABSnod;
 			UABSnod << "UABSs";
 			std::ofstream enB;
 			enB.open(enodeB.str());    
 			std::ofstream UE;
-			UE.open(uenodes.str());     
+			UE.open(uenodes.str());  
+			std::ofstream OverloadingUE;
+			OverloadingUE.open(OverloadingUenodes.str());    
 			std::ofstream UABS;
 			UABS.open(UABSnod.str());   
 			uint16_t enBCellId;
@@ -208,6 +213,27 @@ int enBpowerFailure=0;
 			}
 			UE.close();
 
+			// for (NodeContainer::Iterator j = ueOverloadNodes.Begin ();j != ueOverloadNodes.End (); ++j)
+			// {
+					
+
+			// 	// //Ptr<LteUeNetDevice> UEConnectedenB = ueLteDevs.Get(q)->GetObject<LteUeNetDevice>()->GetTargetEnb();
+			// 	// Ptr<LteEnbNetDevice> UEConnectedenB = ueLteDevs.Get(1)->GetObject<LteUeNetDevice>()->GetTargetEnb();
+			// 	// //NS_ASSERT (UEConnectedenB != 0);
+			// 	// //UEConnectedCellId = ueLteDevs.Get(q)->GetObject<LteUeNetDevice>()->GetTargetEnb();
+			// 	// NS_LOG_UNCOND("UE: ");
+			// 	// NS_LOG_UNCOND(ueLteDevs.Get(1)->GetObject<LteUeNetDevice>()->GetTargetEnb());				
+
+			// 	Ptr<Node> object = *j;
+			// 	Ptr<MobilityModel> OverloadingUEposition = object->GetObject<MobilityModel> ();
+			// 	NS_ASSERT (OverloadingUEposition != 0);
+			// 	Vector pos = OverloadingUEposition->GetPosition ();
+			// 	OverloadingUE << pos.x << "," << pos.y << "," << pos.z << std::endl;
+			// 	// //UE.close();
+			// 	//q++;
+			// }
+			// OverloadingUE.close();
+
 
 			for (NodeContainer::Iterator j = UABSNodes.Begin ();j != UABSNodes.End (); ++j)
 			{
@@ -233,11 +259,12 @@ int enBpowerFailure=0;
 
 			UABS.close();
 
-			Simulator::Schedule(Seconds(5), &GetPositionUEandenB,ueNodes, enbNodes, UABSNodes, enbLteDevs, UABSLteDevs, ueLteDevs );
+			Simulator::Schedule(Seconds(5), &GetPositionUEandenB,ueNodes,enbNodes,UABSNodes,enbLteDevs,UABSLteDevs,ueLteDevs);//,OverloadingUeLteDevs, ueOverloadNodes);
+			
 		}
 
 	  //Get SINR of UEs and Positions
-		void GetSinrUE (NetDeviceContainer ueLteDevs, NodeContainer ueNodes)
+		void GetSinrUE (NetDeviceContainer ueLteDevs, NodeContainer ueNodes, NodeContainer ueOverloadNodes, NetDeviceContainer OverloadingUeLteDevs)
 		{  
 			uint64_t UEImsi;
 			std::stringstream uenodes;
@@ -245,7 +272,9 @@ int enBpowerFailure=0;
 			std::ofstream UE;
 			UE.open(uenodes.str());
 			NodeContainer::Iterator j = ueNodes.Begin();
+			NodeContainer::Iterator q = ueOverloadNodes.Begin();
 			int k =0;
+			int z =0;
 
 			for(uint16_t i = 0; i < ueLteDevs.GetN(); i++)
 			{
@@ -268,8 +297,29 @@ int enBpowerFailure=0;
 			NS_LOG_UNCOND("Users with low sinr: "); //To know if after an UABS is functioning this number decreases.
 			NS_LOG_UNCOND(k);
 
+			for(uint16_t i = 0; i < OverloadingUeLteDevs.GetN(); i++)
+			{
+				UEImsi = OverloadingUeLteDevs.Get(i)->GetObject<LteUeNetDevice>()->GetImsi();
+					if (ue_imsi_sinr[UEImsi-1] < minSINR) // revisar aqui si tengo que poner uephy-1 (imsi-1)
+					{	
+						//NS_LOG_UNCOND("Sinr: "<< ue_imsi_sinr[UEImsi] << " Imsi: " << UEImsi );
+						//UE << "Sinr: "<< ue_imsi_sinr[UEImsi] << " Imsi: " << UEImsi << std::endl;
+						
+						Ptr<Node> object = *q;
+						Ptr<MobilityModel> UEposition = object->GetObject<MobilityModel> ();
+						NS_ASSERT (UEposition != 0);
+						Vector pos = UEposition->GetPosition ();
+						UE << pos.x << "," << pos.y << "," << pos.z << "," << ue_imsi_sinr_linear[UEImsi-1] << ","<< UEImsi<< "," << ue_info_cellid[UEImsi-1]<< std::endl;
+						++j;
+						++z;
+						
+					}
+			}
+			NS_LOG_UNCOND("Overloading Users with low sinr: "); //To know if after an UABS is functioning this number decreases.
+			NS_LOG_UNCOND(z);
+
 			UE.close();
-			Simulator::Schedule(Seconds(5), &GetSinrUE,ueLteDevs,ueNodes);
+			Simulator::Schedule(Seconds(5), &GetSinrUE,ueLteDevs,ueNodes, ueOverloadNodes, OverloadingUeLteDevs);
 		}
 
 
@@ -514,6 +564,15 @@ int enBpowerFailure=0;
 
 		}
 
+		void enB_Overload ( Ptr<LteHelper> lteHelper, NetDeviceContainer OverloadingUeLteDevs, NetDeviceContainer enbLteDevs)
+		{
+			NS_LOG_UNCOND("Attaching Overloading Ues in enB 1...");
+			Ptr<LteEnbNetDevice> Target_enB = enbLteDevs.Get(0)->GetObject<LteEnbNetDevice>();
+			lteHelper->Attach(OverloadingUeLteDevs, Target_enB);
+			//Simulator::Schedule(Seconds(10),&enB_Overload, lteHelper, OverloadingUeLteDevs,enbLteDevs);
+
+		}
+
 		void NotifyHandoverStartUe (std::string context,
                        uint64_t imsi,
                        uint16_t cellId,
@@ -664,12 +723,17 @@ int enBpowerFailure=0;
 		Ptr<Ipv4StaticRouting> remoteHostStaticRouting = ipv4RoutingHelper.GetStaticRouting (remoteHost->GetObject<Ipv4> ());
 		remoteHostStaticRouting->AddNetworkRouteTo (Ipv4Address ("7.0.0.0"), Ipv4Mask ("255.0.0.0"), 1);
 	  
-		// Create node containers: UE, eNodeBs, UABSs.
+		// Create node containers: UE, UE Overloaded Group ,  eNodeBs, UABSs.
 		NodeContainer ueNodes;
-		NodeContainer enbNodes;
-		NodeContainer UABSNodes;
-		enbNodes.Create(numberOfeNodeBNodes);
 		ueNodes.Create(numberOfUENodes);
+		//if (scen == 3 || scen == 4)
+		//{
+		NodeContainer ueOverloadNodes;
+		ueOverloadNodes.Create(numberOfOverloadUENodes);
+		//}
+		NodeContainer enbNodes;
+		enbNodes.Create(numberOfeNodeBNodes);
+		NodeContainer UABSNodes;
 		UABSNodes.Create(numberOfUABS);
 
 
@@ -706,7 +770,8 @@ int enBpowerFailure=0;
 
 		NS_LOG_UNCOND("Installing Mobility Model in UEs...");
 
-		// Install Mobility Model User Equipments
+		// ------------------Install Mobility Model User Equipments-------------------//
+
 		MobilityHelper mobilityUEs;
 		mobilityUEs.SetMobilityModel ("ns3::RandomWalk2dMobilityModel",
 									 "Mode", StringValue ("Time"),
@@ -715,10 +780,36 @@ int enBpowerFailure=0;
 									 //"Speed", StringValue ("ns3::UniformRandomVariable[Min=2.0|Max=4.0]"),
 									 "Speed", StringValue ("ns3::UniformRandomVariable[Min=4.0|Max=8.0]"),
 									 "Bounds", StringValue ("0|6000|0|6000"));
-		mobilityUEs.SetPositionAllocator("ns3::RandomRectanglePositionAllocator",
-			 							 "X", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=6000.0]"),
-										 "Y", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=6000.0]"));
+		// mobilityUEs.SetPositionAllocator("ns3::RandomRectanglePositionAllocator",
+		// 	 							 "X", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=6000.0]"),
+		// 								 "Y", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=6000.0]"));
+		mobilityUEs.SetPositionAllocator("ns3::RandomBoxPositionAllocator",  // to use OkumuraHataPropagationLossModel needs to be in a height greater then 0.
+			 							 "X", StringValue ("ns3::UniformRandomVariable[Min=1.0|Max=6000.0]"),
+										 "Y", StringValue ("ns3::UniformRandomVariable[Min=1.0|Max=6000.0]"),
+										 "Z", StringValue ("ns3::UniformRandomVariable[Min=0.5|Max=1.50]"));
+		//mobilityUEs.SetPositionAllocator(positionAllocUEs);
 		mobilityUEs.Install(ueNodes);
+
+
+		if (scen == 3 || scen == 4)
+		{
+			// ------------------Install Mobility Model User Equipments that will overload the enB-------------------//
+		NS_LOG_UNCOND("Installing Mobility Model in Overloading UEs...");
+
+		MobilityHelper mobilityOverloadingUEs;
+		mobilityOverloadingUEs.SetMobilityModel ("ns3::RandomWalk2dMobilityModel",
+									 "Mode", StringValue ("Time"),
+									 "Time", StringValue ("1s"),//("1s"),
+									 "Speed", StringValue ("ns3::UniformRandomVariable[Min=4.0|Max=8.0]"),
+									 "Bounds", StringValue ("0|3000|0|3000"));
+		
+		mobilityOverloadingUEs.SetPositionAllocator("ns3::RandomBoxPositionAllocator",  // to use OkumuraHataPropagationLossModel needs to be in a height greater then 0.
+			 							 "X", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=3000.0]"),
+										 "Y", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=3000.0]"),
+										 "Z", StringValue ("ns3::UniformRandomVariable[Min=0.5|Max=1.50]"));
+		
+		mobilityOverloadingUEs.Install(ueOverloadNodes);
+		}
 	  
 		if (scen == 2 || scen == 4)
 		{
@@ -745,17 +836,19 @@ int enBpowerFailure=0;
 
 			  
 
-		// Install LTE Devices to the nodes
+		// ------------------- Install LTE Devices to the nodes --------------------------------//
 		NetDeviceContainer enbLteDevs = lteHelper->InstallEnbDevice (enbNodes);
 		NetDeviceContainer ueLteDevs = lteHelper->InstallUeDevice (ueNodes);
 		NetDeviceContainer UABSLteDevs = lteHelper->InstallEnbDevice (UABSNodes);
+		NetDeviceContainer OverloadingUeLteDevs = lteHelper->InstallUeDevice (ueOverloadNodes);
+		
 
 		
 
-
-		// Get position of enBs, UABSs and UEs.
-		Simulator::Schedule(Seconds(5), &GetPositionUEandenB,ueNodes, enbNodes,UABSNodes,enbLteDevs,UABSLteDevs,ueLteDevs);
-	  
+		// ---------------Get position of enBs, UABSs and UEs. -------------------//
+		Simulator::Schedule(Seconds(5), &GetPositionUEandenB,ueNodes,enbNodes,UABSNodes,enbLteDevs,UABSLteDevs,ueLteDevs);//,OverloadingUeLteDevs, ueOverloadNodes);
+		
+	  	
 
 		//Set Power of eNodeBs  
 		Ptr<LteEnbPhy> enodeBPhy; 
@@ -781,20 +874,7 @@ int enBpowerFailure=0;
 			}
 		}
 
-	  //Get Power of eNodeBs and UABSs
-	 // 	Ptr<LteUePhy> UEPhy;
-		// for(uint16_t i = 0; i < ueLteDevs.GetN(); i++)
-		// {
-		// 	UEPhy = ueLteDevs.Get(i)->GetObject<LteUeNetDevice>()->GetPhy();
-		// 	UEPhy->GetTxPower();
-		// 	//UEPhy->GenerateCqiRsrpRsrq();
-		// 	NS_LOG_UNCOND("Noise Figure: ");
-		// 	NS_LOG_UNCOND(UEPhy->GetNoiseFigure());  
-		// 	NS_LOG_UNCOND(" UE Tx Power: ");   
-		// 	NS_LOG_UNCOND (UEPhy->GetTxPower());
-			
-	
-	
+
 	 
 	  // Install the IP stack on the UEs
 	  internet.Install (ueNodes);
@@ -806,6 +886,19 @@ int enBpowerFailure=0;
 		Ptr<Node> ueNode = ueNodes.Get (i);
 			// Set the default gateway for the UE
 			Ptr<Ipv4StaticRouting> ueStaticRouting = ipv4RoutingHelper.GetStaticRouting (ueNode->GetObject<Ipv4> ());
+			ueStaticRouting->SetDefaultRoute (epcHelper->GetUeDefaultGatewayAddress (), 1);
+	  }
+
+	  // ---------------------- Install the IP stack on the Overloading UEs -----------------------//
+	  internet.Install (ueOverloadNodes);
+	  Ipv4InterfaceContainer ueOverloadIpIface;
+	  ueOverloadIpIface = epcHelper->AssignUeIpv4Address (NetDeviceContainer (OverloadingUeLteDevs));
+	  
+	  // -------------------Assign IP address to Overloading UEs, and install applications ----------------------//
+	  for (uint16_t i = 0; i < ueOverloadNodes.GetN(); i++) {
+		Ptr<Node> ueOverloadNode = ueOverloadNodes.Get (i);
+			// Set the default gateway for the UE
+			Ptr<Ipv4StaticRouting> ueStaticRouting = ipv4RoutingHelper.GetStaticRouting (ueOverloadNode->GetObject<Ipv4> ());
 			ueStaticRouting->SetDefaultRoute (epcHelper->GetUeDefaultGatewayAddress (), 1);
 	  }
 
@@ -842,7 +935,7 @@ int enBpowerFailure=0;
 	  
 	  
 		//get Sinr
-		Simulator::Schedule(Seconds(5), &GetSinrUE,ueLteDevs,ueNodes);
+		Simulator::Schedule(Seconds(5), &GetSinrUE,ueLteDevs,ueNodes, ueOverloadNodes, OverloadingUeLteDevs);
 
 
 		//Run Python Command to get centroids
@@ -851,7 +944,7 @@ int enBpowerFailure=0;
 			Simulator::Schedule(Seconds(6), &GetPrioritizedClusters, UABSNodes,  speedUABS,  UABSLteDevs);
 		}
 
-		//Scenario 1: Failure of an enB, overloads the system:
+		//Scenario A: Failure of an enB, overloads the system (the other enBs):
 		if (scen == 1 || scen == 2)
 		{	
 				
@@ -859,7 +952,16 @@ int enBpowerFailure=0;
 			Simulator::Schedule(Seconds(10), &enB_Failure,enbLteDevs,ueLteDevs,lteHelper,enBpowerFailure);
 		}
 
+
+		//Scenario B: enB overloaded, overloads the system:
+		if (scen == 3 || scen == 4)
+		{	
 	
+			Simulator::Schedule(Seconds(10),&enB_Overload, lteHelper, OverloadingUeLteDevs, enbLteDevs);
+			
+		}
+
+		// ---------------------- Setting video transmition - Start sending-receiving -----------------------//
 		NS_LOG_UNCOND("Resquesting-sending Video...");
 	  	NS_LOG_INFO ("Create Applications.");
 	   	for (uint16_t i = 0; i < ueNodes.GetN(); i++) 
@@ -893,7 +995,7 @@ int enBpowerFailure=0;
 			Ptr<Ipv4> ipv4 = ueNodes.Get(i)->GetObject<Ipv4>();
 	  	}
 
-		AnimationInterface anim ("UOSLTE.xml"); // Mandatory
+		AnimationInterface anim ("UOSLTE_run_"+std::to_string(z)+".xml"); // Mandatory
 		anim.SetMaxPktsPerTraceFile(500000); // Set animation interface max packets. (TO CHECK: how many packets i will be sending?) 
 		// Cor e Descrição para eNb
 		for (uint32_t i = 0; i < enbNodes.GetN(); ++i) 
