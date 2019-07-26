@@ -62,8 +62,9 @@
 using namespace ns3;
 
 const uint16_t numberOfeNodeBNodes = 4;
-const uint16_t numberOfUENodes = 245; //Number of user to test: 245, 392, 490 (The number of users and their traffic model follow the parameters recommended by the 3GPP)
-const uint16_t numberOfUABS = 6;
+const uint16_t numberOfUENodes = 100; //Number of user to test: 245, 392, 490 (The number of users and their traffic model follow the parameters recommended by the 3GPP)
+const uint16_t numberOfOverloadUENodes = 20; // user that will be connected to an specific enB. 
+const uint16_t numberOfUABS = 0;
 double simTime = 100; //300 secs
 const int m_distance = 2000; //m_distance between enBs towers.
 // Inter packet interval in ms
@@ -71,7 +72,7 @@ const int m_distance = 2000; //m_distance between enBs towers.
 // double interPacketInterval = 100;
 // uint16_t port = 8000;
 int evalvidId = 0;      
-int eNodeBTxPower = 20; //Set enodeB Power
+int eNodeBTxPower = 30; //Set enodeB Power dBm
 int UABSTxPower = 0;//33;   //Set UABS Power
 uint8_t bandwidth = 25; // 100 RB --> 20MHz  |  25 RB --> 5MHz
 //uint8_t bandwidth = 25; // To use with UABS --> tengo que ver si no necesito crear otro LTEhelper solo para los UABS.
@@ -80,7 +81,7 @@ double ue_info[numberOfeNodeBNodes + numberOfUABS][numberOfUENodes]; //UE Connec
 double ue_imsi_sinr[numberOfUENodes]; //UE Connection Status Register Matrix
 double ue_imsi_sinr_linear[numberOfUENodes];
 double ue_info_cellid[numberOfUENodes];
-int minSINR = 0;
+int minSINR = 0; //  minimum SINR to be considered to clusterization
 string GetClusterCoordinates;
 double Throughput=0.0;
 double PDR=0.0; //Packets Delay Rate
@@ -93,11 +94,11 @@ uint32_t DropPacketsum = 0;
 uint32_t LostPacketsum = 0;
 double Delaysum = 0;
 std::stringstream cmd;
-double UABSHeight = 30.0;
-double enBHeight = 30.0;
-uint32_t nRuns = 2;
+double UABSHeight = 0;
+double enBHeight = 30;
+uint32_t nRuns = 1;
 uint32_t randomSeed = 1234;
-int scen = 0; 
+int scen = 1; 
 // [Scenarios --> Scen[0]: General Scenario, with no UABS support, network ok;  Scen[1]: one enB damaged (off) and no UABS;
 // Scen[2]: one enB damaged (off) with supporting UABS; Scen[3]:Overloaded enB(s) with no UABS support; Scen[4]:Overloaded enB(s) with UABS support; ]
 int enBpowerFailure=0;
@@ -504,6 +505,14 @@ int enBpowerFailure=0;
 
 		}
 
+		void enB_Overload (NetDeviceContainer enbLteDevs,NetDeviceContainer ueLteDevs, Ptr<LteHelper> lteHelper,int enBpowerFailure )
+		{
+
+
+
+
+		}
+
 
 		void NotifyHandoverStartUe (std::string context,
                        uint64_t imsi,
@@ -663,10 +672,12 @@ int enBpowerFailure=0;
 	  
 		// Create node containers: UE, eNodeBs, UABSs.
 		NodeContainer ueNodes;
-		NodeContainer enbNodes;
-		NodeContainer UABSNodes;
-		enbNodes.Create(numberOfeNodeBNodes);
 		ueNodes.Create(numberOfUENodes);
+		NodeContainer ueNodesOverloadGroup;
+		ueNodesOverloadGroup.Create(numberOfOverloadUENodes);
+		NodeContainer enbNodes;
+		enbNodes.Create(numberOfeNodeBNodes);
+		NodeContainer UABSNodes;
 		UABSNodes.Create(numberOfUABS);
 
 
@@ -717,8 +728,8 @@ int enBpowerFailure=0;
 		// 	 							 "X", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=6000.0]"),
 		// 								 "Y", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=6000.0]"));
 		mobilityUEs.SetPositionAllocator("ns3::RandomBoxPositionAllocator",  // to use OkumuraHataPropagationLossModel needs to be in a height greater then 0.
-			 							 "X", StringValue ("ns3::UniformRandomVariable[Min=1.0|Max=6000.0]"),
-										 "Y", StringValue ("ns3::UniformRandomVariable[Min=1.0|Max=6000.0]"),
+			 							 "X", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=6000.0]"),
+										 "Y", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=6000.0]"),
 										 "Z", StringValue ("ns3::UniformRandomVariable[Min=0.5|Max=1.50]"));
 		//mobilityUEs.SetPositionAllocator(positionAllocUEs);
 		mobilityUEs.Install(ueNodes);
@@ -870,12 +881,18 @@ int enBpowerFailure=0;
 			Simulator::Schedule(Seconds(6), &GetPrioritizedClusters, UABSNodes,  speedUABS,  UABSLteDevs);
 		}
 
-		//Scenario 1: Failure of an enB, overloads the system:
+		//Scenario A: Failure of an enB, overloads the system:
 		if (scen == 1)
 		{
 			Simulator::Schedule(Seconds(5), &enB_Failure,enbLteDevs,enBpowerFailure);
 		}
 
+		//Scenario B: enB overloaded, overloads the system:
+		if (scen == 3 || scen == 4)
+		{	
+				
+			//Simulator::Schedule(Seconds(10), &enB_Overload,enbLteDevs,ueLteDevs,lteHelper,enBpowerFailure);
+		}
 	
 		NS_LOG_UNCOND("Resquesting-sending Video...");
 	  	NS_LOG_INFO ("Create Applications.");
