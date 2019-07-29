@@ -1115,8 +1115,8 @@ int transmissionStart = 0;
 
 		//Gnuplot parameters for APD
 		string fileNameWithNoExtensionAPD = "APD_run_";
-		string graphicsFileNameAPD        = fileNameWithNoExtensionPLR + std::to_string(z) +".png";
-		string plotFileNameAPD            = fileNameWithNoExtensionPLR + std::to_string(z)+".plt";
+		string graphicsFileNameAPD        = fileNameWithNoExtensionAPD + std::to_string(z) +".png";
+		string plotFileNameAPD            = fileNameWithNoExtensionAPD + std::to_string(z)+".plt";
 		string plotTitleAPD              = "APD Mean";
 		string dataTitleAPD               = "Average Packet Delay Mean";
 
