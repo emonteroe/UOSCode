@@ -65,7 +65,7 @@ const uint16_t numberOfeNodeBNodes = 4;
 const uint16_t numberOfUENodes = 100; //Number of user to test: 245, 392, 490 (The number of users and their traffic model follow the parameters recommended by the 3GPP)
 const uint16_t numberOfOverloadUENodes = 30; // user that will be connected to an specific enB. 
 const uint16_t numberOfUABS = 0;
-double simTime = 70; //300 secs
+double simTime = 100; //300 secs
 const int m_distance = 2000; //m_distance between enBs towers.
 // Inter packet interval in ms
 // double interPacketInterval = 1;
@@ -144,7 +144,7 @@ int transmissionStart = 0;
 		}
 
 
-		void GetPositionUEandenB(NodeContainer ueNodes, NodeContainer enbNodes, NodeContainer UABSNodes, NetDeviceContainer enbLteDevs,NetDeviceContainer UABSLteDevs, NetDeviceContainer ueLteDevs)//,NetDeviceContainer OverloadingUeLteDevs, NodeContainer ueOverloadNodes)
+		void GetPositionUEandenB(NodeContainer ueNodes, NodeContainer enbNodes, NodeContainer UABSNodes, NetDeviceContainer enbLteDevs,NetDeviceContainer UABSLteDevs, NodeContainer ueOverloadNodes)
 		{
 		// iterate our nodes and print their position.
 			std::stringstream enodeB;
@@ -215,26 +215,26 @@ int transmissionStart = 0;
 			}
 			UE.close();
 
-			// for (NodeContainer::Iterator j = ueOverloadNodes.Begin ();j != ueOverloadNodes.End (); ++j)
-			// {
+			for (NodeContainer::Iterator j = ueOverloadNodes.Begin ();j != ueOverloadNodes.End (); ++j)
+			{
 					
 
-			// 	// //Ptr<LteUeNetDevice> UEConnectedenB = ueLteDevs.Get(q)->GetObject<LteUeNetDevice>()->GetTargetEnb();
-			// 	// Ptr<LteEnbNetDevice> UEConnectedenB = ueLteDevs.Get(1)->GetObject<LteUeNetDevice>()->GetTargetEnb();
-			// 	// //NS_ASSERT (UEConnectedenB != 0);
-			// 	// //UEConnectedCellId = ueLteDevs.Get(q)->GetObject<LteUeNetDevice>()->GetTargetEnb();
-			// 	// NS_LOG_UNCOND("UE: ");
-			// 	// NS_LOG_UNCOND(ueLteDevs.Get(1)->GetObject<LteUeNetDevice>()->GetTargetEnb());				
+				// //Ptr<LteUeNetDevice> UEConnectedenB = ueLteDevs.Get(q)->GetObject<LteUeNetDevice>()->GetTargetEnb();
+				// Ptr<LteEnbNetDevice> UEConnectedenB = ueLteDevs.Get(1)->GetObject<LteUeNetDevice>()->GetTargetEnb();
+				// //NS_ASSERT (UEConnectedenB != 0);
+				// //UEConnectedCellId = ueLteDevs.Get(q)->GetObject<LteUeNetDevice>()->GetTargetEnb();
+				// NS_LOG_UNCOND("UE: ");
+				// NS_LOG_UNCOND(ueLteDevs.Get(1)->GetObject<LteUeNetDevice>()->GetTargetEnb());				
 
-			// 	Ptr<Node> object = *j;
-			// 	Ptr<MobilityModel> OverloadingUEposition = object->GetObject<MobilityModel> ();
-			// 	NS_ASSERT (OverloadingUEposition != 0);
-			// 	Vector pos = OverloadingUEposition->GetPosition ();
-			// 	OverloadingUE << pos.x << "," << pos.y << "," << pos.z << std::endl;
-			// 	// //UE.close();
-			// 	//q++;
-			// }
-			// OverloadingUE.close();
+				Ptr<Node> object = *j;
+				Ptr<MobilityModel> OverloadingUEposition = object->GetObject<MobilityModel> ();
+				NS_ASSERT (OverloadingUEposition != 0);
+				Vector pos = OverloadingUEposition->GetPosition ();
+				OverloadingUE << pos.x << "," << pos.y << "," << pos.z << std::endl;
+				// //UE.close();
+				//q++;
+			}
+			OverloadingUE.close();
 
 
 			for (NodeContainer::Iterator j = UABSNodes.Begin ();j != UABSNodes.End (); ++j)
@@ -261,11 +261,11 @@ int transmissionStart = 0;
 
 			UABS.close();
 
-			Simulator::Schedule(Seconds(5), &GetPositionUEandenB,ueNodes,enbNodes,UABSNodes,enbLteDevs,UABSLteDevs,ueLteDevs);//,OverloadingUeLteDevs, ueOverloadNodes);
+			Simulator::Schedule(Seconds(5), &GetPositionUEandenB,ueNodes,enbNodes,UABSNodes,enbLteDevs,UABSLteDevs,ueOverloadNodes);
 			
 		}
 
-	  //Get SINR of UEs and Positions
+	  //---------------Get SINR of UEs and Positions--------------------------//
 		void GetSinrUE (NetDeviceContainer ueLteDevs, NodeContainer ueNodes, NodeContainer ueOverloadNodes, NetDeviceContainer OverloadingUeLteDevs)
 		{  
 			uint64_t UEImsi;
@@ -313,7 +313,7 @@ int transmissionStart = 0;
 						NS_ASSERT (UEposition != 0);
 						Vector pos = UEposition->GetPosition ();
 						UE << pos.x << "," << pos.y << "," << pos.z << "," << ue_imsi_sinr_linear[UEOverloadImsi-1] << ","<< UEOverloadImsi<< "," << ue_info_cellid[UEOverloadImsi-1]<< std::endl;
-						++j;
+						++q;
 						++z;
 						
 					}
@@ -858,8 +858,8 @@ int transmissionStart = 0;
 									 "Bounds", StringValue ("0|3000|0|3000"));
 		
 		mobilityOverloadingUEs.SetPositionAllocator("ns3::RandomBoxPositionAllocator",  // to use OkumuraHataPropagationLossModel needs to be in a height greater then 0.
-			 							 "X", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=3000.0]"),
-										 "Y", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=3000.0]"),
+			 							 "X", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=1000.0]"), //old setup: 3000
+										 "Y", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=1000.0]"),
 										 "Z", StringValue ("ns3::UniformRandomVariable[Min=0.5|Max=1.50]"));
 		
 		mobilityOverloadingUEs.Install(ueOverloadNodes);
@@ -910,7 +910,7 @@ int transmissionStart = 0;
 		
 
 		// ---------------Get position of enBs, UABSs and UEs. -------------------//
-		Simulator::Schedule(Seconds(5), &GetPositionUEandenB,ueNodes,enbNodes,UABSNodes,enbLteDevs,UABSLteDevs,ueLteDevs);//,OverloadingUeLteDevs, ueOverloadNodes);
+		Simulator::Schedule(Seconds(5), &GetPositionUEandenB,ueNodes,enbNodes,UABSNodes,enbLteDevs,UABSLteDevs,ueOverloadNodes);
 		
 	  	
 
