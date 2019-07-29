@@ -65,7 +65,7 @@ const uint16_t numberOfeNodeBNodes = 4;
 const uint16_t numberOfUENodes = 100; //Number of user to test: 245, 392, 490 (The number of users and their traffic model follow the parameters recommended by the 3GPP)
 const uint16_t numberOfOverloadUENodes = 20; // user that will be connected to an specific enB. 
 const uint16_t numberOfUABS = 0;
-double simTime = 100; //300 secs
+double simTime = 70; //300 secs
 const int m_distance = 2000; //m_distance between enBs towers.
 // Inter packet interval in ms
 // double interPacketInterval = 1;
@@ -86,6 +86,7 @@ string GetClusterCoordinates;
 double Throughput=0.0;
 double PDR=0.0; //Packets Delay Rate
 double PLR=0.0; //Packets Lost Rate
+double APD=0.0;	//Average Packet Delay
 bool UABSFlag;
 bool UABS_On_Flag = false;
 uint32_t txPacketsum = 0;
@@ -102,6 +103,7 @@ int scen = 1;
 // [Scenarios --> Scen[0]: General Scenario, with no UABS support, network ok;  Scen[1]: one enB damaged (off) and no UABS;
 // Scen[2]: one enB damaged (off) with supporting UABS; Scen[3]:Overloaded enB(s) with no UABS support; Scen[4]:Overloaded enB(s) with UABS support; ]
 int enBpowerFailure=0;
+int transmissionStart = 0;
 	 
 		NS_LOG_COMPONENT_DEFINE ("UOSLTE");
 
@@ -267,6 +269,7 @@ int enBpowerFailure=0;
 		void GetSinrUE (NetDeviceContainer ueLteDevs, NodeContainer ueNodes, NodeContainer ueOverloadNodes, NetDeviceContainer OverloadingUeLteDevs)
 		{  
 			uint64_t UEImsi;
+			uint64_t UEOverloadImsi;
 			std::stringstream uenodes;
 			uenodes << "UEsLowSinr";    
 			std::ofstream UE;
@@ -299,8 +302,8 @@ int enBpowerFailure=0;
 
 			for(uint16_t i = 0; i < OverloadingUeLteDevs.GetN(); i++)
 			{
-				UEImsi = OverloadingUeLteDevs.Get(i)->GetObject<LteUeNetDevice>()->GetImsi();
-					if (ue_imsi_sinr[UEImsi-1] < minSINR) // revisar aqui si tengo que poner uephy-1 (imsi-1)
+				UEOverloadImsi = OverloadingUeLteDevs.Get(i)->GetObject<LteUeNetDevice>()->GetImsi();
+					if (ue_imsi_sinr[UEOverloadImsi-1] < minSINR) // revisar aqui si tengo que poner uephy-1 (imsi-1)
 					{	
 						//NS_LOG_UNCOND("Sinr: "<< ue_imsi_sinr[UEImsi] << " Imsi: " << UEImsi );
 						//UE << "Sinr: "<< ue_imsi_sinr[UEImsi] << " Imsi: " << UEImsi << std::endl;
@@ -309,7 +312,7 @@ int enBpowerFailure=0;
 						Ptr<MobilityModel> UEposition = object->GetObject<MobilityModel> ();
 						NS_ASSERT (UEposition != 0);
 						Vector pos = UEposition->GetPosition ();
-						UE << pos.x << "," << pos.y << "," << pos.z << "," << ue_imsi_sinr_linear[UEImsi-1] << ","<< UEImsi<< "," << ue_info_cellid[UEImsi-1]<< std::endl;
+						UE << pos.x << "," << pos.y << "," << pos.z << "," << ue_imsi_sinr_linear[UEOverloadImsi-1] << ","<< UEOverloadImsi<< "," << ue_info_cellid[UEOverloadImsi-1]<< std::endl;
 						++j;
 						++z;
 						
@@ -454,7 +457,7 @@ int enBpowerFailure=0;
 			Simulator::Schedule(Seconds(6), &GetPrioritizedClusters,UABSNodes,  speedUABS,  UABSLteDevs);
 		}
 
-		void ThroughputCalc(Ptr<FlowMonitor> monitor, Ptr<Ipv4FlowClassifier> classifier,Gnuplot2dDataset datasetThroughput,Gnuplot2dDataset datasetPDR,Gnuplot2dDataset datasetPLR)
+		void ThroughputCalc(Ptr<FlowMonitor> monitor, Ptr<Ipv4FlowClassifier> classifier,Gnuplot2dDataset datasetThroughput,Gnuplot2dDataset datasetPDR,Gnuplot2dDataset datasetPLR, Gnuplot2dDataset datasetAPD)
 		{
 
 		monitor->CheckForLostPackets ();
@@ -483,18 +486,21 @@ int enBpowerFailure=0;
 			std::cout<<"Rx Packets = " << iter->second.rxPackets<<"\n";
 			//std::cout << "  All Tx Packets: " << txPacketsum << "\n";
 			//std::cout << "  All Rx Packets: " << rxPacketsum << "\n";
-			//std::cout << "  All Delay: " << Delaysum / txPacketsum << "\n";
+			//std::cout << "  All Delay/Average Packet Delay (APD): " << Delaysum / txPacketsum << "\n"; //APD = Average Packet Delay : to do !
 			//std::cout << "  All Lost Packets: " << LostPacketsum << "\n";
 			//std::cout << "  All Drop Packets: " << DropPacketsum << "\n";
 			std::cout<<"Throughput: " << iter->second.rxBytes * 8.0 / (iter->second.timeLastRxPacket.GetSeconds()-iter->second.timeFirstTxPacket.GetSeconds()) /1024  << " Mbps\n";
 			std::cout << "Packets Delivery Ratio: " << ((rxPacketsum * 100) / txPacketsum) << "%" << "\n";
 			std::cout << "Packets Lost Ratio: " << ((LostPacketsum * 100) / txPacketsum) << "%" << "\n";
+			std::cout << "Average Packet Delay: " << Delaysum / txPacketsum << "\n"; 
 			Throughput=iter->second.rxBytes * 8.0 /(iter->second.timeLastRxPacket.GetSeconds()-iter->second.timeFirstTxPacket.GetSeconds())/ 1024;
 			PDR = ((rxPacketsum * 100) / txPacketsum);
 			PLR = ((LostPacketsum * 100) / txPacketsum);
+			APD = (Delaysum / txPacketsum);
 			datasetThroughput.Add((double)iter->first,(double) Throughput);
 			datasetPDR.Add((double)iter->first,(double) PDR);
 			datasetPLR.Add((double)iter->first,(double) PLR);
+			datasetAPD.Add((double)iter->first,(double) APD);
 			//}
 		}
 
@@ -502,6 +508,42 @@ int enBpowerFailure=0;
 
 
 		}
+
+		void requestVideoStream(Ptr<Node> remoteHost, NodeContainer ueNodes, Ipv4Address remoteHostAddr, double simTime)//, double start)
+		{
+			for (uint16_t i = 0; i < ueNodes.GetN(); i++) 
+			{
+				evalvidId++;
+				int startTime = rand() % 40 + 20; //copiado del codigo de Sid, ver por que el hace esto.
+				uint16_t  port = 8000 * evalvidId + 8000; //to use a different port in every iterac...
+
+
+			//Video Server
+				EvalvidServerHelper server(port);
+				server.SetAttribute ("SenderTraceFilename", StringValue("src/evalvid/st_highway_cif.st"));
+				server.SetAttribute ("SenderDumpFilename", StringValue("src/evalvid/sd_a01_lte"));
+				//server.SetAttribute("PacketPayload", UintegerValue(512));
+				ApplicationContainer apps = server.Install(remoteHost);
+				apps.Start (Seconds (1.0));
+				apps.Stop (Seconds (simTime));
+
+			// Clients
+				EvalvidClientHelper client (remoteHostAddr,port);
+		  
+				stringstream s;
+				s << "rd_a" << i << "_lte";
+
+				client.SetAttribute ("ReceiverDumpFilename", StringValue(s.str()));
+				apps = client.Install (ueNodes.Get(i));
+			
+			 
+				apps.Start (Seconds (startTime));
+				apps.Stop (Seconds (simTime));
+
+				Ptr<Ipv4> ipv4 = ueNodes.Get(i)->GetObject<Ipv4>();
+	  		}
+		}
+
 
 		void enB_Failure (NetDeviceContainer enbLteDevs,NetDeviceContainer ueLteDevs, Ptr<LteHelper> lteHelper,int enBpowerFailure )
 		{
@@ -677,8 +719,8 @@ int enBpowerFailure=0;
 		// lteHelper->SetHandoverAlgorithmAttribute ("ServingCellThreshold", UintegerValue (30));
 		// lteHelper->SetHandoverAlgorithmAttribute ("NeighbourCellOffset", UintegerValue (2));                                      
 		lteHelper->SetHandoverAlgorithmType ("ns3::A3RsrpHandoverAlgorithm"); // Handover by Reference Signal Reference Power (RSRP)
-		lteHelper->SetHandoverAlgorithmAttribute ("TimeToTrigger", TimeValue (MilliSeconds (160))); //default: 256
-		lteHelper->SetHandoverAlgorithmAttribute ("Hysteresis", DoubleValue (1.0)); //default: 3.0
+		lteHelper->SetHandoverAlgorithmAttribute ("TimeToTrigger", TimeValue (MilliSeconds (256))); //default: 256
+		lteHelper->SetHandoverAlgorithmAttribute ("Hysteresis", DoubleValue (3.0)); //default: 3.0
 		
 
 
@@ -690,9 +732,21 @@ int enBpowerFailure=0;
 		lteHelper->SetEnbAntennaModelAttribute("MaxGain", DoubleValue(0.0));
 
 		//Pathlossmodel
-		lteHelper->SetAttribute("PathlossModel",StringValue("ns3::NakagamiPropagationLossModel"));
-		//lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::HybridBuildingsPropagationLossModel"));
+		if (scen == 1 || scen == 3)
+		{
+			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::NakagamiPropagationLossModel"));
+		}
+
+		//lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::FriisPropagationLossModel"));
 		
+		if (scen == 2 || scen == 4)
+		{
+			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
+	    	lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
+	    	Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
+	    }
+
+		//lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::HybridBuildingsPropagationLossModel"));
 		// use always LOS model ( for the HybridBuildingsPropagationModel )
   		//lteHelper->SetPathlossModelAttribute ("Los2NlosThr", DoubleValue (1e6));
 
@@ -717,7 +771,7 @@ int enBpowerFailure=0;
 		ipv4h.SetBase ("1.0.0.0", "255.0.0.0");
 		Ipv4InterfaceContainer internetIpIfaces = ipv4h.Assign (internetDevices);
 		// interface 0 is localhost, 1 is the p2p device
-		// Ipv4Address remoteHostAddr = internetIpIfaces.GetAddress (1);
+		Ipv4Address remoteHostAddr = internetIpIfaces.GetAddress (1);
 
 		Ipv4StaticRoutingHelper ipv4RoutingHelper;
 		Ptr<Ipv4StaticRouting> remoteHostStaticRouting = ipv4RoutingHelper.GetStaticRouting (remoteHost->GetObject<Ipv4> ());
@@ -814,7 +868,16 @@ int enBpowerFailure=0;
 		if (scen == 2 || scen == 4)
 		{
 			NS_LOG_UNCOND("Installing Mobility Model in UABSs...");
-			// Install Mobility Model UABS
+			// ----------------Install Mobility Model UABS--------------------//
+
+			Ptr<ListPositionAllocator> positionAllocUABS = CreateObject<ListPositionAllocator> ();
+			positionAllocUABS->Add (Vector( 1500, 1500 , enBHeight)); //1
+			positionAllocUABS->Add (Vector( 4500, 1500 , enBHeight)); //2
+			positionAllocUABS->Add (Vector( 1500, 4500 , enBHeight)); //3
+			positionAllocUABS->Add (Vector( 4500, 4500 , enBHeight)); //4
+			positionAllocUABS->Add (Vector( 4500, 4500 , enBHeight)); //5
+			positionAllocUABS->Add (Vector( 4500, 4500 , enBHeight)); //6
+
 			MobilityHelper mobilityUABS;
 			mobilityUABS.SetMobilityModel ("ns3::ConstantVelocityMobilityModel");
 			//mobilityUABS.SetMobilityModel ("ns3::RandomWalk2dMobilityModel", 
@@ -823,13 +886,14 @@ int enBpowerFailure=0;
 									 //"Speed", StringValue ("ns3::ConstantRandomVariable[Constant=1.0]"),
 				//                     "Speed", StringValue ("ns3::UniformRandomVariable[Min=2.0|Max=4.0]"),
 				//		     "Bounds", StringValue ("0|2000|0|2000"));
-			mobilityUABS.SetPositionAllocator ("ns3::GridPositionAllocator",
-											"MinX", DoubleValue (0.0),
-											"MinY", DoubleValue (0.0),
-											"DeltaX", DoubleValue (m_distance),
-											"DeltaY", DoubleValue (m_distance),
-											"GridWidth", UintegerValue (3),
-											"LayoutType", StringValue ("RowFirst"));
+			mobilityUABS.SetPositionAllocator(positionAllocUABS);
+			// mobilityUABS.SetPositionAllocator ("ns3::GridPositionAllocator",
+			// 								"MinX", DoubleValue (0.0),
+			// 								"MinY", DoubleValue (0.0),
+			// 								"DeltaX", DoubleValue (m_distance),
+			// 								"DeltaY", DoubleValue (m_distance),
+			// 								"GridWidth", UintegerValue (3),
+			// 								"LayoutType", StringValue ("RowFirst"));
 
 			mobilityUABS.Install(UABSNodes);
 		}
@@ -882,7 +946,8 @@ int enBpowerFailure=0;
 	  ueIpIface = epcHelper->AssignUeIpv4Address (NetDeviceContainer (ueLteDevs));
 	  
 	  // Assign IP address to UEs, and install applications
-	  for (uint16_t i = 0; i < ueNodes.GetN(); i++) {
+	  for (uint16_t i = 0; i < ueNodes.GetN(); i++) 
+	  {
 		Ptr<Node> ueNode = ueNodes.Get (i);
 			// Set the default gateway for the UE
 			Ptr<Ipv4StaticRouting> ueStaticRouting = ipv4RoutingHelper.GetStaticRouting (ueNode->GetObject<Ipv4> ());
@@ -895,7 +960,8 @@ int enBpowerFailure=0;
 	  ueOverloadIpIface = epcHelper->AssignUeIpv4Address (NetDeviceContainer (OverloadingUeLteDevs));
 	  
 	  // -------------------Assign IP address to Overloading UEs, and install applications ----------------------//
-	  for (uint16_t i = 0; i < ueOverloadNodes.GetN(); i++) {
+	  for (uint16_t i = 0; i < ueOverloadNodes.GetN(); i++) 
+	  {
 		Ptr<Node> ueOverloadNode = ueOverloadNodes.Get (i);
 			// Set the default gateway for the UE
 			Ptr<Ipv4StaticRouting> ueStaticRouting = ipv4RoutingHelper.GetStaticRouting (ueOverloadNode->GetObject<Ipv4> ());
@@ -964,37 +1030,20 @@ int enBpowerFailure=0;
 		// ---------------------- Setting video transmition - Start sending-receiving -----------------------//
 		NS_LOG_UNCOND("Resquesting-sending Video...");
 	  	NS_LOG_INFO ("Create Applications.");
-	   	for (uint16_t i = 0; i < ueNodes.GetN(); i++) 
-		{
-			evalvidId++;
-			uint16_t  port = 8000 * evalvidId + 8000; //to use a different port in every iterac...
+	   
+	  	requestVideoStream(remoteHost, ueNodes, remoteHostAddr, simTime);//, transmissionStart);
+
+	  	if (scen == 3 || scen == 4)
+		{	
+	
+			Simulator::Schedule(Seconds(11),&requestVideoStream, remoteHost, ueOverloadNodes, remoteHostAddr, simTime);
+			
+		}
 
 
-		//Video Server
-			EvalvidServerHelper server(port);
-			server.SetAttribute ("SenderTraceFilename", StringValue("src/evalvid/st_highway_cif.st"));
-			server.SetAttribute ("SenderDumpFilename", StringValue("src/evalvid/sd_a01_lte"));
-			ApplicationContainer apps = server.Install(remoteHost);//Container.Get(0)); //verificar esto
-			apps.Start (Seconds (9.0));
-			apps.Stop (Seconds (simTime));
 
-		// Clients
-			EvalvidClientHelper client (internetIpIfaces.GetAddress (1),port);
-	  
-			stringstream s;
-			s << "rd_a" << i << "_lte";
 
-			client.SetAttribute ("ReceiverDumpFilename", StringValue(s.str()));
-			apps = client.Install (ueNodes.Get(i));
-		
-		 
-		
-			apps.Start (Seconds (10.0));
-			apps.Stop (Seconds (simTime));
-
-			Ptr<Ipv4> ipv4 = ueNodes.Get(i)->GetObject<Ipv4>();
-	  	}
-
+	  	// ---------------------- Configuration of Netanim  -----------------------//
 		AnimationInterface anim ("UOSLTE_run_"+std::to_string(z)+".xml"); // Mandatory
 		anim.SetMaxPktsPerTraceFile(500000); // Set animation interface max packets. (TO CHECK: how many packets i will be sending?) 
 		// Cor e Descrição para eNb
@@ -1064,6 +1113,13 @@ int enBpowerFailure=0;
 		string plotTitlePLR               = "PLR Mean";
 		string dataTitlePLR               = "Packet Lost Ratio Mean";
 
+		//Gnuplot parameters for APD
+		string fileNameWithNoExtensionAPD = "APD_run_";
+		string graphicsFileNameAPD        = fileNameWithNoExtensionPLR + std::to_string(z) +".png";
+		string plotFileNameAPD            = fileNameWithNoExtensionPLR + std::to_string(z)+".plt";
+		string plotTitleAPD              = "APD Mean";
+		string dataTitleAPD               = "Average Packet Delay Mean";
+
 		// Instantiate the plot and set its title.
 		//Throughput
 		Gnuplot gnuplot (graphicsFileName);
@@ -1074,6 +1130,9 @@ int enBpowerFailure=0;
 		//PLR
 		Gnuplot gnuplotPLR (graphicsFileNamePLR);
 		gnuplotPLR.SetTitle (plotTitlePLR);
+		//APD
+		Gnuplot gnuplotAPD (graphicsFileNameAPD);
+		gnuplotAPD.SetTitle (plotTitleAPD);
 
 		// Make the graphics file, which the plot file will be when it is used with Gnuplot, be a PNG file.
 		//Throughput
@@ -1082,6 +1141,8 @@ int enBpowerFailure=0;
 		gnuplotPDR.SetTerminal ("png");
 		//PLR
 		gnuplotPLR.SetTerminal ("png");
+		//APD
+		gnuplotAPD.SetTerminal ("png");
 
 		// Set the labels for each axis.
 		//Throughput
@@ -1090,18 +1151,23 @@ int enBpowerFailure=0;
 		gnuplotPDR.SetLegend ("Flow", "Packet Delivery Ratio (%)");
 		//PLR
 		gnuplotPLR.SetLegend ("Flow", "Packet Lost Ratio (%)");
+		//APD
+		gnuplotAPD.SetLegend ("Flow", "Average Packet Delay (%)");
 
 		Gnuplot2dDataset datasetThroughput;
 		Gnuplot2dDataset datasetPDR;
 		Gnuplot2dDataset datasetPLR;
+		Gnuplot2dDataset datasetAPD;
 
 		datasetThroughput.SetTitle (dataTitle);
 		datasetPDR.SetTitle (dataTitlePDR);
 		datasetPLR.SetTitle (dataTitlePLR);
+		datasetAPD.SetTitle (dataTitleAPD);
 
 		datasetThroughput.SetStyle (Gnuplot2dDataset::LINES_POINTS);
 		datasetPDR.SetStyle (Gnuplot2dDataset::LINES_POINTS);
 		datasetPLR.SetStyle (Gnuplot2dDataset::LINES_POINTS);
+		datasetAPD.SetStyle (Gnuplot2dDataset::LINES_POINTS);
 
 		//Flow Monitor Setup
 		FlowMonitorHelper flowmon;
@@ -1114,7 +1180,7 @@ int enBpowerFailure=0;
 		Simulator::Run ();
 
 		// Print per flow statistics
-		ThroughputCalc(monitor,classifier,datasetThroughput,datasetPDR,datasetPLR);
+		ThroughputCalc(monitor,classifier,datasetThroughput,datasetPDR,datasetPLR,datasetAPD);
 		monitor->SerializeToXmlFile("UOSLTE-FlowMonitor_run_"+std::to_string(z)+".xml",true,true);
 
 		//Gnuplot ...continued
@@ -1124,6 +1190,8 @@ int enBpowerFailure=0;
 		gnuplotPDR.AddDataset (datasetPDR);
 		//PLR
 		gnuplotPLR.AddDataset (datasetPLR);
+		//APD
+		gnuplotAPD.AddDataset (datasetAPD);
 
 		// Open the plot file.
 		//Throughput
@@ -1146,6 +1214,13 @@ int enBpowerFailure=0;
 		gnuplotPLR.GenerateOutput (plotFilePLR);
 		// Close the plot file.
 		plotFilePLR.close ();
+
+		//APD
+		ofstream plotFileAPD (plotFileNameAPD.c_str());
+		// Write the plot file.
+		gnuplotAPD.GenerateOutput (plotFileAPD);
+		// Close the plot file.
+		plotFileAPD.close ();
 
 
 		
