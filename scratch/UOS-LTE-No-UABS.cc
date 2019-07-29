@@ -63,7 +63,7 @@ using namespace ns3;
 
 const uint16_t numberOfeNodeBNodes = 4;
 const uint16_t numberOfUENodes = 100; //Number of user to test: 245, 392, 490 (The number of users and their traffic model follow the parameters recommended by the 3GPP)
-const uint16_t numberOfOverloadUENodes = 20; // user that will be connected to an specific enB. 
+const uint16_t numberOfOverloadUENodes = 30; // user that will be connected to an specific enB. 
 const uint16_t numberOfUABS = 0;
 double simTime = 70; //300 secs
 const int m_distance = 2000; //m_distance between enBs towers.
@@ -531,7 +531,7 @@ int transmissionStart = 0;
 				EvalvidClientHelper client (remoteHostAddr,port);
 		  
 				stringstream s;
-				s << "rd_a" << i << "_lte";
+				s << "rd_a" << i << "_lte"; //here there is a problem when is called for the users that are overloading the enb, it overwrites. To fix.
 
 				client.SetAttribute ("ReceiverDumpFilename", StringValue(s.str()));
 				apps = client.Install (ueNodes.Get(i));
