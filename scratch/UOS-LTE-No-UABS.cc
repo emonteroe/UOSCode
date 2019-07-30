@@ -515,7 +515,7 @@ int transmissionStart = 0;
 			for (uint16_t i = 0; i < ueNodes.GetN(); i++) 
 			{
 				evalvidId++;
-				int startTime = rand() % 40 + 20; //copiado del codigo de Sid, ver por que el hace esto.
+				int startTime = rand() % (int)simTime + 2; // a random number between 2 - simtime (actual 100 segs)
 				uint16_t  port = 8000 * evalvidId + 8000; //to use a different port in every iterac...
 
 
@@ -610,8 +610,9 @@ int transmissionStart = 0;
 		void enB_Overload ( Ptr<LteHelper> lteHelper, NetDeviceContainer OverloadingUeLteDevs, NetDeviceContainer enbLteDevs)
 		{
 			NS_LOG_UNCOND("Attaching Overloading Ues in enB 1...");
-			Ptr<LteEnbNetDevice> Target_enB = enbLteDevs.Get(0)->GetObject<LteEnbNetDevice>();
-			lteHelper->Attach(OverloadingUeLteDevs, Target_enB);
+			//Ptr<LteEnbNetDevice> Target_enB = enbLteDevs.Get(0)->GetObject<LteEnbNetDevice>();
+			//lteHelper->Attach(OverloadingUeLteDevs, Target_enB);
+			lteHelper->Attach(OverloadingUeLteDevs);
 			//Simulator::Schedule(Seconds(10),&enB_Overload, lteHelper, OverloadingUeLteDevs,enbLteDevs);
 
 		}
@@ -712,9 +713,9 @@ int transmissionStart = 0;
 		// lteHelper->SetHandoverAlgorithmAttribute ("ServingCellThreshold", UintegerValue (30));
 		// lteHelper->SetHandoverAlgorithmAttribute ("NeighbourCellOffset", UintegerValue (2));                                      
 		lteHelper->SetHandoverAlgorithmType ("ns3::A3RsrpHandoverAlgorithm"); // Handover by Reference Signal Reference Power (RSRP)
-		lteHelper->SetHandoverAlgorithmAttribute ("TimeToTrigger", TimeValue (MilliSeconds (512))); //default: 256
-		lteHelper->SetHandoverAlgorithmAttribute ("Hysteresis", DoubleValue (5.0)); //default: 3.0
-		Config::SetDefault ("ns3::LteEnbRrc::HandoverJoiningTimeoutDuration", TimeValue (Seconds (3)));
+		lteHelper->SetHandoverAlgorithmAttribute ("TimeToTrigger", TimeValue (MilliSeconds (256))); //default: 256
+		lteHelper->SetHandoverAlgorithmAttribute ("Hysteresis", DoubleValue (3.0)); //default: 3.0
+		//Config::SetDefault ("ns3::LteEnbRrc::HandoverJoiningTimeoutDuration", TimeValue (Seconds (1)));
 		//Config::SetDefault ("ns3::LteEnbRrc::HandoverLeavingTimeout", TimeValue (Seconds (3)));
 
 		//Pathlossmodel
@@ -822,9 +823,9 @@ int transmissionStart = 0;
 		//--------------------Antenna parameters----------------------// 
 		//--------------------Cosine Antenna--------------------------//
 		lteHelper->SetEnbAntennaModelType("ns3::CosineAntennaModel");
-		lteHelper->SetEnbAntennaModelAttribute("Orientation", DoubleValue(0));
+		lteHelper->SetEnbAntennaModelAttribute("Orientation", DoubleValue(0)); //default is 0
 		lteHelper->SetEnbAntennaModelAttribute("Beamwidth", DoubleValue(60));
-		lteHelper->SetEnbAntennaModelAttribute("MaxGain", DoubleValue(0.0));
+		lteHelper->SetEnbAntennaModelAttribute("MaxGain", DoubleValue(20.0));
 		//--------------------Parabolic Antenna  -- > to use with multisector cells.
 		// lteHelper->SetEnbAntennaModelType ("ns3::ParabolicAntennaModel");
 		// lteHelper->SetEnbAntennaModelAttribute ("Beamwidth",   DoubleValue (70));
@@ -979,12 +980,22 @@ int transmissionStart = 0;
 			// }
 		}
 
-
+		//---------------------- Install the IP stack on the UEs (regular UE and Overloding-UE) ---------------------- //
+		NodeContainer ues_all;
+		
+  		Ipv4InterfaceContainer ue_all_IpIfaces;
+  		NetDeviceContainer ueDevs;
+  		ues_all.Add (ueNodes);
+      	ues_all.Add (ueOverloadNodes);
+      	ueDevs.Add (ueLteDevs);
+      	ueDevs.Add (OverloadingUeLteDevs);
+      	internet.Install (ues_all);
+      	ue_all_IpIfaces = epcHelper->AssignUeIpv4Address (NetDeviceContainer (ueDevs));
 	 
-	  // Install the IP stack on the UEs
-	  internet.Install (ueNodes);
-	  Ipv4InterfaceContainer ueIpIface;
-	  ueIpIface = epcHelper->AssignUeIpv4Address (NetDeviceContainer (ueLteDevs));
+	  //---------------------- Install the IP stack on the UEs---------------------- //
+	  // internet.Install (ueNodes);
+	  // Ipv4InterfaceContainer ueIpIface;
+	  // ueIpIface = epcHelper->AssignUeIpv4Address (NetDeviceContainer (ueLteDevs));
 	  
 	  // Assign IP address to UEs, and install applications
 	  for (uint16_t i = 0; i < ueNodes.GetN(); i++) 
@@ -996,9 +1007,9 @@ int transmissionStart = 0;
 	  }
 
 	  // ---------------------- Install the IP stack on the Overloading UEs -----------------------//
-	  internet.Install (ueOverloadNodes);
-	  Ipv4InterfaceContainer ueOverloadIpIface;
-	  ueOverloadIpIface = epcHelper->AssignUeIpv4Address (NetDeviceContainer (OverloadingUeLteDevs));
+	  // internet.Install (ueOverloadNodes);
+	  // Ipv4InterfaceContainer ueOverloadIpIface;
+	  // ueOverloadIpIface = epcHelper->AssignUeIpv4Address (NetDeviceContainer (OverloadingUeLteDevs));
 	  
 	  // -------------------Assign IP address to Overloading UEs, and install applications ----------------------//
 	  for (uint16_t i = 0; i < ueOverloadNodes.GetN(); i++) 
@@ -1064,8 +1075,8 @@ int transmissionStart = 0;
 		if (scen == 3 || scen == 4)
 		{	
 	
-			//Simulator::Schedule(Seconds(10),&enB_Overload, lteHelper, OverloadingUeLteDevs, enbLteDevs); //estaba en 10 segundos
-			enB_Overload(lteHelper, OverloadingUeLteDevs, enbLteDevs);
+			Simulator::Schedule(Seconds(10),&enB_Overload, lteHelper, OverloadingUeLteDevs, enbLteDevs); //estaba en 10 segundos
+			//enB_Overload(lteHelper, OverloadingUeLteDevs, enbLteDevs);
 		}
 
 		// ---------------------- Setting video transmition - Start sending-receiving -----------------------//
