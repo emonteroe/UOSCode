@@ -72,7 +72,7 @@ const int m_distance = 2000; //m_distance between enBs towers.
 // double interPacketInterval = 100;
 // uint16_t port = 8000;
 int evalvidId = 0;      
-int eNodeBTxPower = 30; //Set enodeB Power dBm
+int eNodeBTxPower = 10; //Set enodeB Power dBm
 int UABSTxPower = 0;//33;   //Set UABS Power
 uint8_t bandwidth = 25; // 100 RB --> 20MHz  |  25 RB --> 5MHz
 //uint8_t bandwidth = 25; // To use with UABS --> tengo que ver si no necesito crear otro LTEhelper solo para los UABS.
@@ -457,7 +457,7 @@ int transmissionStart = 0;
 			Simulator::Schedule(Seconds(6), &GetPrioritizedClusters,UABSNodes,  speedUABS,  UABSLteDevs);
 		}
 
-		void ThroughputCalc(Ptr<FlowMonitor> monitor, Ptr<Ipv4FlowClassifier> classifier,Gnuplot2dDataset datasetThroughput,Gnuplot2dDataset datasetPDR,Gnuplot2dDataset datasetPLR, Gnuplot2dDataset datasetAPD)
+		void ThroughputCalc(Ptr<FlowMonitor> monitor, Ptr<Ipv4FlowClassifier> classifier,Gnuplot2dDataset datasetThroughput,Gnuplot2dDataset datasetPDR,Gnuplot2dDataset datasetPLR, Gnuplot2dDataset datasetAPD, uint32_t z)
 		{
 
 		monitor->CheckForLostPackets ();
@@ -505,6 +505,7 @@ int transmissionStart = 0;
 		}
 
 		//monitor->SerializeToXmlFile("UOSLTE-FlowMonitor.xml",true,true);
+		monitor->SerializeToXmlFile("UOSLTE-FlowMonitor_run_"+std::to_string(z)+".xml",true,true);
 
 
 		}
@@ -699,18 +700,10 @@ int transmissionStart = 0;
 		Config::SetDefault ("ns3::LteHelper::UseIdealRrc", BooleanValue (true));
 		Config::SetDefault ("ns3::LteEnbRrc::SrsPeriodicity", UintegerValue(320));
 
-		// set frequency. This is important because it changes the behavior of the path loss model
-   		lteHelper->SetEnbDeviceAttribute("DlEarfcn", UintegerValue(100));
-    	lteHelper->SetEnbDeviceAttribute("UlEarfcn", UintegerValue(18100)); //investigar cual es la frecuencia que voy a utilizar.
-   		// lteHelper->SetUeDeviceAttribute ("DlEarfcn", UintegerValue (200));
 
 		 Config::SetDefault( "ns3::LteUePhy::TxPower", DoubleValue(10) );         // Transmission power in dBm
 		 Config::SetDefault( "ns3::LteUePhy::NoiseFigure", DoubleValue(9) );     // Default 5
-		// Config::SetDefault( "ns3::LteEnbPhy::TxPower", DoubleValue(40) );        // Transmission power in dBm
-		// Config::SetDefault( "ns3::LteEnbPhy::NoiseFigure", DoubleValue(6) );    // Default 5
-
-		lteHelper->SetEnbDeviceAttribute ("DlBandwidth", UintegerValue (bandwidth)); //Set Download BandWidth
-		lteHelper->SetEnbDeviceAttribute ("UlBandwidth", UintegerValue (bandwidth)); //Set Upload Bandwidth
+		
 
 	  
 		//Set Handover algorithm 
@@ -719,17 +712,10 @@ int transmissionStart = 0;
 		// lteHelper->SetHandoverAlgorithmAttribute ("ServingCellThreshold", UintegerValue (30));
 		// lteHelper->SetHandoverAlgorithmAttribute ("NeighbourCellOffset", UintegerValue (2));                                      
 		lteHelper->SetHandoverAlgorithmType ("ns3::A3RsrpHandoverAlgorithm"); // Handover by Reference Signal Reference Power (RSRP)
-		lteHelper->SetHandoverAlgorithmAttribute ("TimeToTrigger", TimeValue (MilliSeconds (256))); //default: 256
-		lteHelper->SetHandoverAlgorithmAttribute ("Hysteresis", DoubleValue (3.0)); //default: 3.0
-		
-
-
-		 //Antenna parameters  (cuando activo la antena da error de " what():  vector::_M_range_check: __n (which is 4) >= this->size() (which is 4)" )
-
-		lteHelper->SetEnbAntennaModelType("ns3::CosineAntennaModel");
-		lteHelper->SetEnbAntennaModelAttribute("Orientation", DoubleValue(0));
-		lteHelper->SetEnbAntennaModelAttribute("Beamwidth", DoubleValue(60));
-		lteHelper->SetEnbAntennaModelAttribute("MaxGain", DoubleValue(0.0));
+		lteHelper->SetHandoverAlgorithmAttribute ("TimeToTrigger", TimeValue (MilliSeconds (512))); //default: 256
+		lteHelper->SetHandoverAlgorithmAttribute ("Hysteresis", DoubleValue (5.0)); //default: 3.0
+		Config::SetDefault ("ns3::LteEnbRrc::HandoverJoiningTimeoutDuration", TimeValue (Seconds (3)));
+		//Config::SetDefault ("ns3::LteEnbRrc::HandoverLeavingTimeout", TimeValue (Seconds (3)));
 
 		//Pathlossmodel
 		if (scen == 1 || scen == 3)
@@ -820,6 +806,41 @@ int transmissionStart = 0;
 		mobilityenB.SetMobilityModel("ns3::ConstantPositionMobilityModel");
 		mobilityenB.SetPositionAllocator(positionAlloc2);
 		mobilityenB.Install(enbNodes);
+		
+		//---------------Set Power of eNodeBs------------------//  
+		// Ptr<LteEnbPhy> enodeBPhy; 
+
+		// for( uint16_t i = 0; i < enbLteDevs.GetN(); i++) 
+		// {
+		// 	enodeBPhy = enbLteDevs.Get(i)->GetObject<LteEnbNetDevice>()->GetPhy();
+		// 	enodeBPhy->SetTxPower(eNodeBTxPower);
+			
+		// }
+		Config::SetDefault ("ns3::LteEnbPhy::TxPower", DoubleValue (eNodeBTxPower));
+		Config::SetDefault( "ns3::LteEnbPhy::NoiseFigure", DoubleValue(5) );    // Default 5
+		
+		//--------------------Antenna parameters----------------------// 
+		//--------------------Cosine Antenna--------------------------//
+		lteHelper->SetEnbAntennaModelType("ns3::CosineAntennaModel");
+		lteHelper->SetEnbAntennaModelAttribute("Orientation", DoubleValue(0));
+		lteHelper->SetEnbAntennaModelAttribute("Beamwidth", DoubleValue(60));
+		lteHelper->SetEnbAntennaModelAttribute("MaxGain", DoubleValue(0.0));
+		//--------------------Parabolic Antenna  -- > to use with multisector cells.
+		// lteHelper->SetEnbAntennaModelType ("ns3::ParabolicAntennaModel");
+		// lteHelper->SetEnbAntennaModelAttribute ("Beamwidth",   DoubleValue (70));
+		// lteHelper->SetEnbAntennaModelAttribute ("MaxAttenuation",     DoubleValue (20.0));
+
+		//-------------------Set frequency. This is important because it changes the behavior of the path loss model
+   		lteHelper->SetEnbDeviceAttribute("DlEarfcn", UintegerValue(100));
+    	lteHelper->SetEnbDeviceAttribute("UlEarfcn", UintegerValue(18100)); 
+   		// lteHelper->SetUeDeviceAttribute ("DlEarfcn", UintegerValue (200));
+		
+		//-------------------Set Bandwith for enB-----------------------------//
+		lteHelper->SetEnbDeviceAttribute ("DlBandwidth", UintegerValue (bandwidth)); //Set Download BandWidth
+		lteHelper->SetEnbDeviceAttribute ("UlBandwidth", UintegerValue (bandwidth)); //Set Upload Bandwidth
+
+		// ------------------- Install LTE Devices to the nodes --------------------------------//
+		NetDeviceContainer enbLteDevs = lteHelper->InstallEnbDevice (enbNodes);
 
 
 		NS_LOG_UNCOND("Installing Mobility Model in UEs...");
@@ -829,17 +850,17 @@ int transmissionStart = 0;
 		MobilityHelper mobilityUEs;
 		mobilityUEs.SetMobilityModel ("ns3::RandomWalk2dMobilityModel",
 									 "Mode", StringValue ("Time"),
-									 "Time", StringValue ("0.5s"),//("1s"),
+									 "Time", StringValue ("5s"),//("1s"),
 									 //"Speed", StringValue ("ns3::ConstantRandomVariable[Constant=4.0]"),
 									 //"Speed", StringValue ("ns3::UniformRandomVariable[Min=2.0|Max=4.0]"),
-									 "Speed", StringValue ("ns3::UniformRandomVariable[Min=4.0|Max=8.0]"),
+									 "Speed", StringValue ("ns3::UniformRandomVariable[Min=2.0|Max=8.0]"),
 									 "Bounds", StringValue ("0|6000|0|6000"));
 		// mobilityUEs.SetPositionAllocator("ns3::RandomRectanglePositionAllocator",
 		// 	 							 "X", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=6000.0]"),
 		// 								 "Y", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=6000.0]"));
 		mobilityUEs.SetPositionAllocator("ns3::RandomBoxPositionAllocator",  // to use OkumuraHataPropagationLossModel needs to be in a height greater then 0.
-			 							 "X", StringValue ("ns3::UniformRandomVariable[Min=1.0|Max=6000.0]"),
-										 "Y", StringValue ("ns3::UniformRandomVariable[Min=1.0|Max=6000.0]"),
+			 							 "X", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=6000.0]"),
+										 "Y", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=6000.0]"),
 										 "Z", StringValue ("ns3::UniformRandomVariable[Min=0.5|Max=1.50]"));
 		//mobilityUEs.SetPositionAllocator(positionAllocUEs);
 		mobilityUEs.Install(ueNodes);
@@ -853,9 +874,9 @@ int transmissionStart = 0;
 		MobilityHelper mobilityOverloadingUEs;
 		mobilityOverloadingUEs.SetMobilityModel ("ns3::RandomWalk2dMobilityModel",
 									 "Mode", StringValue ("Time"),
-									 "Time", StringValue ("1s"),//("1s"),
-									 "Speed", StringValue ("ns3::UniformRandomVariable[Min=4.0|Max=8.0]"),
-									 "Bounds", StringValue ("0|3000|0|3000"));
+									 "Time", StringValue ("5s"),//("1s"),
+									 "Speed", StringValue ("ns3::UniformRandomVariable[Min=2.0|Max=8.0]"),
+									 "Bounds", StringValue ("0|1000|0|1000"));
 		
 		mobilityOverloadingUEs.SetPositionAllocator("ns3::RandomBoxPositionAllocator",  // to use OkumuraHataPropagationLossModel needs to be in a height greater then 0.
 			 							 "X", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=1000.0]"), //old setup: 3000
@@ -896,12 +917,40 @@ int transmissionStart = 0;
 			// 								"LayoutType", StringValue ("RowFirst"));
 
 			mobilityUABS.Install(UABSNodes);
+
+		Config::SetDefault ("ns3::LteEnbPhy::TxPower", DoubleValue (UABSTxPower));
+		Config::SetDefault( "ns3::LteEnbPhy::NoiseFigure", DoubleValue(5) );    // Default 5
+		
+		//--------------------Antenna parameters----------------------// 
+		
+		//--------------------Cosine Antenna--------------------------//
+		// lteHelper->SetEnbAntennaModelType("ns3::CosineAntennaModel");
+		// lteHelper->SetEnbAntennaModelAttribute("Orientation", DoubleValue(0));
+		// lteHelper->SetEnbAntennaModelAttribute("Beamwidth", DoubleValue(60));
+		// lteHelper->SetEnbAntennaModelAttribute("MaxGain", DoubleValue(0.0));
+		
+		//--------------------Parabolic Antenna  -- > to use with multisector cells.
+		// lteHelper->SetEnbAntennaModelType ("ns3::ParabolicAntennaModel");
+		// lteHelper->SetEnbAntennaModelAttribute ("Beamwidth",   DoubleValue (70));
+		// lteHelper->SetEnbAntennaModelAttribute ("MaxAttenuation",     DoubleValue (20.0));
+		
+		//--------------------Isotropic Antenna--------------------------------------//
+		lteHelper->SetEnbAntennaModelType ("ns3::IsotropicAntennaModel");
+
+		//-------------------Set frequency. This is important because it changes the behavior of the path loss model
+   		lteHelper->SetEnbDeviceAttribute("DlEarfcn", UintegerValue(100));
+    	lteHelper->SetEnbDeviceAttribute("UlEarfcn", UintegerValue(18100)); 
+   		// lteHelper->SetUeDeviceAttribute ("DlEarfcn", UintegerValue (200));
+		
+		//-------------------Set Bandwith for enB-----------------------------//
+		lteHelper->SetEnbDeviceAttribute ("DlBandwidth", UintegerValue (bandwidth)); //Set Download BandWidth
+		lteHelper->SetEnbDeviceAttribute ("UlBandwidth", UintegerValue (bandwidth)); //Set Upload Bandwidth
+
 		}
 
 			  
 
 		// ------------------- Install LTE Devices to the nodes --------------------------------//
-		NetDeviceContainer enbLteDevs = lteHelper->InstallEnbDevice (enbNodes);
 		NetDeviceContainer ueLteDevs = lteHelper->InstallUeDevice (ueNodes);
 		NetDeviceContainer UABSLteDevs = lteHelper->InstallEnbDevice (UABSNodes);
 		NetDeviceContainer OverloadingUeLteDevs = lteHelper->InstallUeDevice (ueOverloadNodes);
@@ -914,28 +963,20 @@ int transmissionStart = 0;
 		
 	  	
 
-		//Set Power of eNodeBs  
-		Ptr<LteEnbPhy> enodeBPhy; 
-
-		for( uint16_t i = 0; i < enbLteDevs.GetN(); i++) 
-		{
-			enodeBPhy = enbLteDevs.Get(i)->GetObject<LteEnbNetDevice>()->GetPhy();
-			enodeBPhy->SetTxPower(eNodeBTxPower);
-			
-		}
+		
 		
 		// //Set Power of UABS, initially 0 to simulate a turned off UABS.
 		if (scen == 2 || scen == 4)
 		{
-			Ptr<LteEnbPhy> UABSPhy;
+			// Ptr<LteEnbPhy> UABSPhy;
 	 
-			for( uint16_t i = 0; i < UABSLteDevs.GetN(); i++) 
-			{
-				UABSPhy = UABSLteDevs.Get(i)->GetObject<LteEnbNetDevice>()->GetPhy();
-				UABSPhy->SetTxPower(UABSTxPower);
-				// NS_LOG_UNCOND("UABS TX Power: ");
-				// NS_LOG_UNCOND(UABSPhy->GetTxPower());
-			}
+			// for( uint16_t i = 0; i < UABSLteDevs.GetN(); i++) 
+			// {
+			// 	UABSPhy = UABSLteDevs.Get(i)->GetObject<LteEnbNetDevice>()->GetPhy();
+			// 	UABSPhy->SetTxPower(UABSTxPower);
+			// 	// NS_LOG_UNCOND("UABS TX Power: ");
+			// 	// NS_LOG_UNCOND(UABSPhy->GetTxPower());
+			// }
 		}
 
 
@@ -1023,8 +1064,8 @@ int transmissionStart = 0;
 		if (scen == 3 || scen == 4)
 		{	
 	
-			Simulator::Schedule(Seconds(10),&enB_Overload, lteHelper, OverloadingUeLteDevs, enbLteDevs);
-			
+			//Simulator::Schedule(Seconds(10),&enB_Overload, lteHelper, OverloadingUeLteDevs, enbLteDevs); //estaba en 10 segundos
+			enB_Overload(lteHelper, OverloadingUeLteDevs, enbLteDevs);
 		}
 
 		// ---------------------- Setting video transmition - Start sending-receiving -----------------------//
@@ -1036,7 +1077,7 @@ int transmissionStart = 0;
 	  	if (scen == 3 || scen == 4)
 		{	
 	
-			Simulator::Schedule(Seconds(11),&requestVideoStream, remoteHost, ueOverloadNodes, remoteHostAddr, simTime);
+			Simulator::Schedule(Seconds(11),&requestVideoStream, remoteHost, ueOverloadNodes, remoteHostAddr, simTime); //estaba en 11 segundos
 			
 		}
 
@@ -1045,7 +1086,7 @@ int transmissionStart = 0;
 
 	  	// ---------------------- Configuration of Netanim  -----------------------//
 		AnimationInterface anim ("UOSLTE_run_"+std::to_string(z)+".xml"); // Mandatory
-		anim.SetMaxPktsPerTraceFile(500000); // Set animation interface max packets. (TO CHECK: how many packets i will be sending?) 
+		anim.SetMaxPktsPerTraceFile(5000000); // Set animation interface max packets. (TO CHECK: how many packets i will be sending?) 
 		// Cor e Descrição para eNb
 		for (uint32_t i = 0; i < enbNodes.GetN(); ++i) 
 		{
@@ -1180,8 +1221,8 @@ int transmissionStart = 0;
 		Simulator::Run ();
 
 		// Print per flow statistics
-		ThroughputCalc(monitor,classifier,datasetThroughput,datasetPDR,datasetPLR,datasetAPD);
-		monitor->SerializeToXmlFile("UOSLTE-FlowMonitor_run_"+std::to_string(z)+".xml",true,true);
+		ThroughputCalc(monitor,classifier,datasetThroughput,datasetPDR,datasetPLR,datasetAPD,z);
+		//monitor->SerializeToXmlFile("UOSLTE-FlowMonitor_run_"+std::to_string(z)+".xml",true,true);
 
 		//Gnuplot ...continued
  		//Throughput
