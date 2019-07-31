@@ -274,15 +274,19 @@ int transmissionStart = 0;
 			uenodes << "UEsLowSinr";    
 			std::ofstream UE;
 			UE.open(uenodes.str());
-			NodeContainer::Iterator j = ueNodes.Begin();
-			NodeContainer::Iterator q = ueOverloadNodes.Begin();
+			// NodeContainer::Iterator j = ueNodes.Begin();
+			// NodeContainer::Iterator q = ueOverloadNodes.Begin();
 			int k =0;
 			int z =0;
+			int i =0;
+			int q =0;
 
-			for(uint16_t i = 0; i < ueLteDevs.GetN(); i++)
+			//for(uint16_t i = 0; i < ueLteDevs.GetN(); i++)
+			//{
+				for (NodeContainer::Iterator j = ueNodes.Begin ();j != ueNodes.End (); ++j)
 			{
 				UEImsi = ueLteDevs.Get(i)->GetObject<LteUeNetDevice>()->GetImsi();
-					if (ue_imsi_sinr[UEImsi-1] < minSINR) // revisar aqui si tengo que poner uephy-1 (imsi-1)
+					if (ue_imsi_sinr[UEImsi-1] < minSINR) 
 					{	
 						//NS_LOG_UNCOND("Sinr: "<< ue_imsi_sinr[UEImsi] << " Imsi: " << UEImsi );
 						//UE << "Sinr: "<< ue_imsi_sinr[UEImsi] << " Imsi: " << UEImsi << std::endl;
@@ -292,7 +296,7 @@ int transmissionStart = 0;
 						NS_ASSERT (UEposition != 0);
 						Vector pos = UEposition->GetPosition ();
 						UE << pos.x << "," << pos.y << "," << pos.z << "," << ue_imsi_sinr_linear[UEImsi-1] << ","<< UEImsi<< "," << ue_info_cellid[UEImsi-1]<< std::endl;
-						++j;
+						++i;
 						++k;
 						
 					}
@@ -300,15 +304,17 @@ int transmissionStart = 0;
 			NS_LOG_UNCOND("Users with low sinr: "); //To know if after an UABS is functioning this number decreases.
 			NS_LOG_UNCOND(k);
 
-			for(uint16_t i = 0; i < OverloadingUeLteDevs.GetN(); i++)
+			// for(uint16_t i = 0; i < OverloadingUeLteDevs.GetN(); i++)
+			// {
+				for (NodeContainer::Iterator j = ueOverloadNodes.Begin ();j != ueOverloadNodes.End (); ++j)
 			{
-				UEOverloadImsi = OverloadingUeLteDevs.Get(i)->GetObject<LteUeNetDevice>()->GetImsi();
+				UEOverloadImsi = OverloadingUeLteDevs.Get(q)->GetObject<LteUeNetDevice>()->GetImsi();
 					if (ue_imsi_sinr[UEOverloadImsi-1] < minSINR) // revisar aqui si tengo que poner uephy-1 (imsi-1)
 					{	
 						//NS_LOG_UNCOND("Sinr: "<< ue_imsi_sinr[UEImsi] << " Imsi: " << UEImsi );
 						//UE << "Sinr: "<< ue_imsi_sinr[UEImsi] << " Imsi: " << UEImsi << std::endl;
 						
-						Ptr<Node> object = *q;
+						Ptr<Node> object = *j;
 						Ptr<MobilityModel> UEposition = object->GetObject<MobilityModel> ();
 						NS_ASSERT (UEposition != 0);
 						Vector pos = UEposition->GetPosition ();
@@ -484,10 +490,10 @@ int transmissionStart = 0;
 			std::cout<<"Flow ID: " << iter->first << " Src Addr " << t.sourceAddress << " Dst Addr " << t.destinationAddress<<"\n";
 			std::cout<<"Tx Packets = " << iter->second.txPackets<<"\n";
 			std::cout<<"Rx Packets = " << iter->second.rxPackets<<"\n";
-			//std::cout << "  All Tx Packets: " << txPacketsum << "\n";
-			//std::cout << "  All Rx Packets: " << rxPacketsum << "\n";
+			std::cout << "  All Tx Packets: " << txPacketsum << "\n";
+			std::cout << "  All Rx Packets: " << rxPacketsum << "\n";
 			//std::cout << "  All Delay/Average Packet Delay (APD): " << Delaysum / txPacketsum << "\n"; //APD = Average Packet Delay : to do !
-			//std::cout << "  All Lost Packets: " << LostPacketsum << "\n";
+			std::cout << "  All Lost Packets: " << LostPacketsum << "\n";
 			//std::cout << "  All Drop Packets: " << DropPacketsum << "\n";
 			std::cout<<"Throughput: " << iter->second.rxBytes * 8.0 / (iter->second.timeLastRxPacket.GetSeconds()-iter->second.timeFirstTxPacket.GetSeconds()) /1024  << " Mbps\n";
 			std::cout << "Packets Delivery Ratio: " << ((rxPacketsum * 100) / txPacketsum) << "%" << "\n";
@@ -694,8 +700,18 @@ int transmissionStart = 0;
 		//Ptr<EpcHelper>  epcHelper = CreateObject<EpcHelper> ();
 		Ptr<PointToPointEpcHelper>  epcHelper = CreateObject<PointToPointEpcHelper> ();
 		lteHelper->SetEpcHelper (epcHelper);  //Evolved Packet Core (EPC)
+		
+		//----------------------Proportional Fair Scheduler-----------------------//
 		lteHelper->SetSchedulerType("ns3::PfFfMacScheduler"); // Scheduler es para asignar los recursos un UE va a tener  (cuales UE deben tener recursos y cuanto)
 		//PfFfMacScheduler --> es un proportional fair scheduler
+		//----------------------PSS Scheduler-----------------------//
+		// lteHelper->SetSchedulerType("ns3::PssFfMacScheduler");  //Priority Set scheduler.
+		// lteHelper->SetSchedulerAttribute("nMux",UintegerValue(1)); // the maximum number of UE selected by TD scheduler
+  		//lteHelper->SetSchedulerAttribute("PssFdSchedulerType", StringValue("CoItA")); // PF scheduler type in PSS
+		
+		// Modo de transmissão (SISO [0], MIMO [1])
+    	Config::SetDefault("ns3::LteEnbRrc::DefaultTransmissionMode",UintegerValue(0));
+
 		Ptr<Node> pgw = epcHelper->GetPgwNode ();
 	  
 		Config::SetDefault ("ns3::LteHelper::UseIdealRrc", BooleanValue (true));
@@ -722,6 +738,9 @@ int transmissionStart = 0;
 		if (scen == 1 || scen == 3)
 		{
 			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::NakagamiPropagationLossModel"));
+			// lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
+	  //   	lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
+	  //   	Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
 		}
 
 		//lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::FriisPropagationLossModel"));
@@ -822,14 +841,16 @@ int transmissionStart = 0;
 		
 		//--------------------Antenna parameters----------------------// 
 		//--------------------Cosine Antenna--------------------------//
-		lteHelper->SetEnbAntennaModelType("ns3::CosineAntennaModel");
-		lteHelper->SetEnbAntennaModelAttribute("Orientation", DoubleValue(0)); //default is 0
-		lteHelper->SetEnbAntennaModelAttribute("Beamwidth", DoubleValue(60));
-		lteHelper->SetEnbAntennaModelAttribute("MaxGain", DoubleValue(20.0));
+		// lteHelper->SetEnbAntennaModelType("ns3::CosineAntennaModel");  // CosineAntennaModel associated with an eNB device allows to model one sector of a macro base station
+		// lteHelper->SetEnbAntennaModelAttribute("Orientation", DoubleValue(0)); //default is 0
+		// lteHelper->SetEnbAntennaModelAttribute("Beamwidth", DoubleValue(60));
+		// lteHelper->SetEnbAntennaModelAttribute("MaxGain", DoubleValue(0.0)); //default 0
 		//--------------------Parabolic Antenna  -- > to use with multisector cells.
 		// lteHelper->SetEnbAntennaModelType ("ns3::ParabolicAntennaModel");
 		// lteHelper->SetEnbAntennaModelAttribute ("Beamwidth",   DoubleValue (70));
 		// lteHelper->SetEnbAntennaModelAttribute ("MaxAttenuation",     DoubleValue (20.0));
+		//--------------------Isotropic Antenna--------------------------//
+		lteHelper->SetEnbAntennaModelType ("ns3::IsotropicAntennaModel");  //irradiates in all directions
 
 		//-------------------Set frequency. This is important because it changes the behavior of the path loss model
    		lteHelper->SetEnbDeviceAttribute("DlEarfcn", UintegerValue(100));
