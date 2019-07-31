@@ -62,19 +62,20 @@
 using namespace ns3;
 
 const uint16_t numberOfeNodeBNodes = 4;
-const uint16_t numberOfUENodes = 100; //Number of user to test: 245, 392, 490 (The number of users and their traffic model follow the parameters recommended by the 3GPP)
-const uint16_t numberOfOverloadUENodes = 30; // user that will be connected to an specific enB. 
-const uint16_t numberOfUABS = 0;
-double simTime = 100; //300 secs
+const uint16_t numberOfUENodes = 50; //Number of user to test: 245, 392, 490 (The number of users and their traffic model follow the parameters recommended by the 3GPP)
+const uint16_t numberOfOverloadUENodes = 1; // user that will be connected to an specific enB. 
+const uint16_t numberOfUABS = 6;
+double simTime = 20; //300 secs
 const int m_distance = 2000; //m_distance between enBs towers.
 // Inter packet interval in ms
 // double interPacketInterval = 1;
 // double interPacketInterval = 100;
 // uint16_t port = 8000;
 int evalvidId = 0;      
-int eNodeBTxPower = 10; //Set enodeB Power dBm
+int eNodeBTxPower = 46; //Set enodeB Power dBm 46dBm --> 20MHz  |  43dBm --> 5MHz
 int UABSTxPower = 0;//33;   //Set UABS Power
-uint8_t bandwidth = 25; // 100 RB --> 20MHz  |  25 RB --> 5MHz
+uint8_t bandwidth_enb = 100; // 100 RB --> 20MHz  |  25 RB --> 5MHz
+uint8_t bandwidth_UABS = 25; // 100 RB --> 20MHz  |  25 RB --> 5MHz
 //uint8_t bandwidth = 25; // To use with UABS --> tengo que ver si no necesito crear otro LTEhelper solo para los UABS.
 double speedUABS = 10;
 double ue_info[numberOfeNodeBNodes + numberOfUABS][numberOfUENodes]; //UE Connection Status Register Matrix
@@ -345,7 +346,7 @@ int transmissionStart = 0;
 			//If el UABS_On_Flag o el UABSFlag esta True, set la potencia, de lo contrario mantenla en 0 (apagado).
 			if (UABSFlag == true && UABS_On_Flag == false) // revisar esta logica
 			{
-				UABSTxPower = 20;
+				UABSTxPower = 23;
 				
 				for( uint16_t i = 0; i < UABSLteDevs.GetN(); i++) 
 				{
@@ -737,6 +738,7 @@ int transmissionStart = 0;
 		//Pathlossmodel
 		if (scen == 1 || scen == 3)
 		{
+			NS_LOG_UNCOND("Pathloss model: Nakagami Propagation ");
 			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::NakagamiPropagationLossModel"));
 			// lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
 	  //   	lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
@@ -746,7 +748,8 @@ int transmissionStart = 0;
 		//lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::FriisPropagationLossModel"));
 		
 		if (scen == 2 || scen == 4)
-		{
+		{	
+			NS_LOG_UNCOND("Pathloss model: OkumuraHata ");
 			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
 	    	lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
 	    	Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
@@ -858,8 +861,8 @@ int transmissionStart = 0;
    		// lteHelper->SetUeDeviceAttribute ("DlEarfcn", UintegerValue (200));
 		
 		//-------------------Set Bandwith for enB-----------------------------//
-		lteHelper->SetEnbDeviceAttribute ("DlBandwidth", UintegerValue (bandwidth)); //Set Download BandWidth
-		lteHelper->SetEnbDeviceAttribute ("UlBandwidth", UintegerValue (bandwidth)); //Set Upload Bandwidth
+		lteHelper->SetEnbDeviceAttribute ("DlBandwidth", UintegerValue (bandwidth_enb)); //Set Download BandWidth
+		lteHelper->SetEnbDeviceAttribute ("UlBandwidth", UintegerValue (bandwidth_enb)); //Set Upload Bandwidth
 
 		// ------------------- Install LTE Devices to the nodes --------------------------------//
 		NetDeviceContainer enbLteDevs = lteHelper->InstallEnbDevice (enbNodes);
@@ -872,7 +875,7 @@ int transmissionStart = 0;
 		MobilityHelper mobilityUEs;
 		mobilityUEs.SetMobilityModel ("ns3::RandomWalk2dMobilityModel",
 									 "Mode", StringValue ("Time"),
-									 "Time", StringValue ("5s"),//("1s"),
+									 "Time", StringValue ("1s"),//("1s"),
 									 //"Speed", StringValue ("ns3::ConstantRandomVariable[Constant=4.0]"),
 									 //"Speed", StringValue ("ns3::UniformRandomVariable[Min=2.0|Max=4.0]"),
 									 "Speed", StringValue ("ns3::UniformRandomVariable[Min=2.0|Max=8.0]"),
@@ -896,7 +899,7 @@ int transmissionStart = 0;
 		MobilityHelper mobilityOverloadingUEs;
 		mobilityOverloadingUEs.SetMobilityModel ("ns3::RandomWalk2dMobilityModel",
 									 "Mode", StringValue ("Time"),
-									 "Time", StringValue ("5s"),//("1s"),
+									 "Time", StringValue ("1s"),//("1s"),
 									 "Speed", StringValue ("ns3::UniformRandomVariable[Min=2.0|Max=8.0]"),
 									 "Bounds", StringValue ("0|1000|0|1000"));
 		
@@ -965,8 +968,8 @@ int transmissionStart = 0;
    		// lteHelper->SetUeDeviceAttribute ("DlEarfcn", UintegerValue (200));
 		
 		//-------------------Set Bandwith for enB-----------------------------//
-		lteHelper->SetEnbDeviceAttribute ("DlBandwidth", UintegerValue (bandwidth)); //Set Download BandWidth
-		lteHelper->SetEnbDeviceAttribute ("UlBandwidth", UintegerValue (bandwidth)); //Set Upload Bandwidth
+		lteHelper->SetEnbDeviceAttribute ("DlBandwidth", UintegerValue (bandwidth_UABS)); //Set Download BandWidth
+		lteHelper->SetEnbDeviceAttribute ("UlBandwidth", UintegerValue (bandwidth_UABS)); //Set Upload Bandwidth
 
 		}
 
