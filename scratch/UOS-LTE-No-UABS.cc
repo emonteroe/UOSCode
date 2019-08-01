@@ -822,16 +822,18 @@ int transmissionStart = 0;
 		// Create node containers: UE, UE Overloaded Group ,  eNodeBs, UABSs.
 		NodeContainer ueNodes;
 		ueNodes.Create(numberOfUENodes);
-		//if (scen == 3 || scen == 4)
-		//{
 		NodeContainer ueOverloadNodes;
-		ueOverloadNodes.Create(numberOfOverloadUENodes);
-		//}
+		if (scen == 3 || scen == 4)
+		{
+			ueOverloadNodes.Create(numberOfOverloadUENodes);
+		}
 		NodeContainer enbNodes;
 		enbNodes.Create(numberOfeNodeBNodes);
 		NodeContainer UABSNodes;
-		UABSNodes.Create(numberOfUABS);
-
+		if (scen == 2 || scen == 4)
+		{
+			UABSNodes.Create(numberOfUABS);
+		}
 
 		NS_LOG_UNCOND("Installing Mobility Model in enBs...");
 
@@ -1010,14 +1012,19 @@ int transmissionStart = 0;
 
 		// ------------------- Install LTE Devices to the nodes --------------------------------//
 		NetDeviceContainer ueLteDevs = lteHelper->InstallUeDevice (ueNodes);
-		if(scen =! 0)
+		NetDeviceContainer UABSLteDevs;
+		NetDeviceContainer OverloadingUeLteDevs;
+		if(scen == 2 || scen == 4)
 		{
-		NetDeviceContainer UABSLteDevs = lteHelper->InstallEnbDevice (UABSNodes);
-		NetDeviceContainer OverloadingUeLteDevs = lteHelper->InstallUeDevice (ueOverloadNodes);
+		UABSLteDevs = lteHelper->InstallEnbDevice (UABSNodes);
+		}
+		if(scen == 3 || scen == 4)
+		{
+		OverloadingUeLteDevs = lteHelper->InstallUeDevice (ueOverloadNodes);
 		}
 
 		
-		if(scen =! 0)
+		if(scen != 0)
 		{
 		// ---------------Get position of enBs, UABSs and UEs. -------------------//
 		Simulator::Schedule(Seconds(5), &GetPositionUEandenB,ueNodes,enbNodes,UABSNodes,enbLteDevs,UABSLteDevs,ueOverloadNodes);
@@ -1043,9 +1050,13 @@ int transmissionStart = 0;
   		Ipv4InterfaceContainer ue_all_IpIfaces;
   		NetDeviceContainer ueDevs;
   		ues_all.Add (ueNodes);
+  		ueDevs.Add (ueLteDevs);
+  		if (scen  == 3 || scen  == 4 ) 
+      	{
       	ues_all.Add (ueOverloadNodes);
-      	ueDevs.Add (ueLteDevs);
       	ueDevs.Add (OverloadingUeLteDevs);
+      	}
+      	
       	internet.Install (ues_all);
       	ue_all_IpIfaces = epcHelper->AssignUeIpv4Address (NetDeviceContainer (ueDevs));
 	 
@@ -1069,14 +1080,16 @@ int transmissionStart = 0;
 	  // ueOverloadIpIface = epcHelper->AssignUeIpv4Address (NetDeviceContainer (OverloadingUeLteDevs));
 	  
 	  // -------------------Assign IP address to Overloading UEs, and install applications ----------------------//
-	  for (uint16_t i = 0; i < ueOverloadNodes.GetN(); i++) 
+	  if (scen  == 3 || scen  == 4 )
 	  {
-		Ptr<Node> ueOverloadNode = ueOverloadNodes.Get (i);
-			// Set the default gateway for the UE
-			Ptr<Ipv4StaticRouting> ueStaticRouting = ipv4RoutingHelper.GetStaticRouting (ueOverloadNode->GetObject<Ipv4> ());
-			ueStaticRouting->SetDefaultRoute (epcHelper->GetUeDefaultGatewayAddress (), 1);
-	  }
-
+		  for (uint16_t i = 0; i < ueOverloadNodes.GetN(); i++) 
+		  {
+			Ptr<Node> ueOverloadNode = ueOverloadNodes.Get (i);
+				// Set the default gateway for the UE
+				Ptr<Ipv4StaticRouting> ueStaticRouting = ipv4RoutingHelper.GetStaticRouting (ueOverloadNode->GetObject<Ipv4> ());
+				ueStaticRouting->SetDefaultRoute (epcHelper->GetUeDefaultGatewayAddress (), 1);
+		  }
+		}
 
 		NS_LOG_UNCOND("Attaching Ues in enBs/UABSs...");
 		// Attach one UE per eNodeB // ahora no es un UE por eNodeB, es cualquier UE a cualquier eNodeB
@@ -1108,9 +1121,9 @@ int transmissionStart = 0;
 		// activate EPSBEARER
 		lteHelper->ActivateDedicatedEpsBearer (ueLteDevs, EpsBearer (EpsBearer::NGBR_VIDEO_TCP_DEFAULT), EpcTft::Default ());
 	  
-	  	if(scen =! 0)
+	  	//get Sinr
+	  	if(scen != 0)
 		{
-		//get Sinr
 		Simulator::Schedule(Seconds(5), &GetSinrUE,ueLteDevs,ueNodes, ueOverloadNodes, OverloadingUeLteDevs);
 		}
 
