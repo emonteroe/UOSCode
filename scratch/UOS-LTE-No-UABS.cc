@@ -65,7 +65,7 @@ const uint16_t numberOfeNodeBNodes = 4;
 const uint16_t numberOfUENodes = 50; //Number of user to test: 245, 392, 490 (The number of users and their traffic model follow the parameters recommended by the 3GPP)
 const uint16_t numberOfOverloadUENodes = 1; // user that will be connected to an specific enB. 
 const uint16_t numberOfUABS = 6;
-double simTime = 20; //300 secs
+double simTime = 70; //300 secs
 const int m_distance = 2000; //m_distance between enBs towers.
 // Inter packet interval in ms
 // double interPacketInterval = 1;
@@ -77,7 +77,7 @@ int UABSTxPower = 0;//33;   //Set UABS Power
 uint8_t bandwidth_enb = 100; // 100 RB --> 20MHz  |  25 RB --> 5MHz
 uint8_t bandwidth_UABS = 25; // 100 RB --> 20MHz  |  25 RB --> 5MHz
 //uint8_t bandwidth = 25; // To use with UABS --> tengo que ver si no necesito crear otro LTEhelper solo para los UABS.
-double speedUABS = 10;
+double speedUABS = 0;
 double ue_info[numberOfeNodeBNodes + numberOfUABS][numberOfUENodes]; //UE Connection Status Register Matrix
 double ue_imsi_sinr[numberOfUENodes]; //UE Connection Status Register Matrix
 double ue_imsi_sinr_linear[numberOfUENodes];
@@ -96,7 +96,7 @@ uint32_t DropPacketsum = 0;
 uint32_t LostPacketsum = 0;
 double Delaysum = 0;
 std::stringstream cmd;
-double UABSHeight = 0;
+double UABSHeight = 30;
 double enBHeight = 30;
 uint32_t nRuns = 1;
 uint32_t randomSeed = 1234;
@@ -336,26 +336,35 @@ int transmissionStart = 0;
 		void SetTXPowerPositionAndVelocityUABS(NodeContainer UABSNodes, double speedUABS, NetDeviceContainer UABSLteDevs, std::vector<ns3::Vector3D> CoorPriorities_Vector)
 		{
 			Ptr<LteEnbPhy> UABSPhy;
-			// uint16_t UABSCellId;
-
+			
 			//Necesito hacer un filtro de que cuando CoorPriorities_Vector venga con las coordenadas y cual UABS va pa X coordenada buscar cual UABS tiene cual CellID y entonces colocar ese UABS en la coordenada.
-
-			//UABSCellId = UABSLteDevs.Get(k)->GetObject<LteEnbNetDevice>()->GetCellId();
 	 
 			//Turn on or off UABS TX Power:
 			//If el UABS_On_Flag o el UABSFlag esta True, set la potencia, de lo contrario mantenla en 0 (apagado).
 			if (UABSFlag == true && UABS_On_Flag == false) // revisar esta logica
 			{
 				UABSTxPower = 23;
-				
-				for( uint16_t i = 0; i < UABSLteDevs.GetN(); i++) 
+				if (CoorPriorities_Vector.size() <= UABSNodes.GetN())
 				{
-					UABSPhy = UABSLteDevs.Get(i)->GetObject<LteEnbNetDevice>()->GetPhy();
-					UABSPhy->SetTxPower(UABSTxPower);
-					// NS_LOG_UNCOND("UABS TX Power: ");
-					// NS_LOG_UNCOND(UABSPhy->GetTxPower());
-					//lteHelper->AttachToClosestEnb (ueLteDevs, UABSLteDevs);
-					
+					for( uint16_t i = 0; i < CoorPriorities_Vector.size(); i++) 
+					{
+						UABSPhy = UABSLteDevs.Get(i)->GetObject<LteEnbNetDevice>()->GetPhy();
+						UABSPhy->SetTxPower(UABSTxPower);
+						// NS_LOG_UNCOND("UABS TX Power: ");
+						// NS_LOG_UNCOND(UABSPhy->GetTxPower());
+						//lteHelper->AttachToClosestEnb (ueLteDevs, UABSLteDevs);
+						
+					}
+				}
+				else
+				{
+					for( uint16_t i = 0; i < UABSLteDevs.GetN(); i++) 
+					{
+						UABSPhy = UABSLteDevs.Get(i)->GetObject<LteEnbNetDevice>()->GetPhy();
+						UABSPhy->SetTxPower(UABSTxPower);
+						
+					}
+
 				}
 				UABS_On_Flag = true;
 			}
@@ -367,35 +376,83 @@ int transmissionStart = 0;
 				{
 					UABSPhy = UABSLteDevs.Get(i)->GetObject<LteEnbNetDevice>()->GetPhy();
 					UABSPhy->SetTxPower(UABSTxPower);
-					// NS_LOG_UNCOND("UABS TX Power: ");
-					// NS_LOG_UNCOND(UABSPhy->GetTxPower());
-					//lteHelper->AttachToClosestEnb (ueLteDevs, UABSLteDevs);
+					
 				}
 
 			}
 
-		//Set Position of UABS / or trajectory to go to assist a low SINR Area:
+			//--------------------Set Position of UABS / or trajectory to go to assist a low SINR Area:--------------------//
 			//If la posicion cambio y el UABS_On_Flag esta True, setea la nueva posicion.
-		for (uint16_t k=0 ; k < UABSNodes.GetN(); k++)
-		{
-			Ptr<ConstantVelocityMobilityModel> PosUABS = UABSNodes.Get(k)->GetObject<ConstantVelocityMobilityModel>();
-			//PosUABS->SetPosition(Vector(10, 10, 40)); // aqui tengo que poner las coordenadas obtenidas por el algoritmo de clusterizacion.
-			PosUABS->SetPosition(CoorPriorities_Vector.at(k));
-			//NS_LOG_UNCOND("Temp: ");
-			//NS_LOG_UNCOND(CoorPriorities_Vector.at(k));
-			//NS_LOG_UNCOND("GetPosition: ");
-			NS_LOG_UNCOND (PosUABS->GetPosition());
-		}
+			
+			// NS_LOG_UNCOND("CoorPriorities_Vector:");
+			// NS_LOG_UNCOND(CoorPriorities_Vector.size());
+			// NS_LOG_UNCOND(" UABS quantity nodes:");
+			// NS_LOG_UNCOND(UABSNodes.GetN());
+			if (CoorPriorities_Vector.size() <= UABSNodes.GetN())
+			{
+				for (uint16_t k=0 ; k < CoorPriorities_Vector.size(); k++)
+					{	
+						Ptr<ConstantVelocityMobilityModel> PosUABS = UABSNodes.Get(k)->GetObject<ConstantVelocityMobilityModel>();
+						//PosUABS->SetPosition(Vector(10, 10, 40)); // aqui tengo que poner las coordenadas obtenidas por el algoritmo de clusterizacion.
+						PosUABS->SetPosition(CoorPriorities_Vector.at(k));
+						//NS_LOG_UNCOND("Temp: ");
+						//NS_LOG_UNCOND(CoorPriorities_Vector.at(k));
+						//NS_LOG_UNCOND("GetPosition: ");
+						NS_LOG_UNCOND (PosUABS->GetPosition());
+					}	
+			}
+			else
+			{
+				for (uint16_t k=0 ; k < UABSNodes.GetN(); k++)
+				{	
+					Ptr<ConstantVelocityMobilityModel> PosUABS = UABSNodes.Get(k)->GetObject<ConstantVelocityMobilityModel>();
+					//PosUABS->SetPosition(Vector(10, 10, 40)); // aqui tengo que poner las coordenadas obtenidas por el algoritmo de clusterizacion.
+					PosUABS->SetPosition(CoorPriorities_Vector.at(k));
+					//NS_LOG_UNCOND("Temp: ");
+					//NS_LOG_UNCOND(CoorPriorities_Vector.at(k));
+					//NS_LOG_UNCOND("GetPosition: ");
+					NS_LOG_UNCOND (PosUABS->GetPosition());
+				}	
+			}
 
 
-		//Set Velocity of UABS to start moving:
-		//If  si el UABSFlag esta True, setea la velocidad, de lo contrario si UABS_On_Flag esta True mantenla en 0 (apagado).
-		for (uint16_t n=0 ; n < UABSNodes.GetN(); n++)
-		{
-			Ptr<ConstantVelocityMobilityModel> VelUABS = UABSNodes.Get(n)->GetObject<ConstantVelocityMobilityModel>();
-			VelUABS->SetVelocity(Vector(speedUABS, 0,0));//speedUABS, 0));
-			//NS_LOG_UNCOND (VelUABS->GetVelocity());
-		}
+			//-------------------Set Velocity of UABS to start moving:----------------------//
+			//If  si el UABSFlag esta True, setea la velocidad, de lo contrario si UABS_On_Flag esta True mantenla en 0 (apagado).
+			
+			if (UABSFlag == true && UABS_On_Flag == false) // revisar esta logica
+			{
+				speedUABS=10;
+				if (CoorPriorities_Vector.size() <= UABSNodes.GetN())
+				{
+					for (uint16_t n=0 ; n < CoorPriorities_Vector.size(); n++)
+					{
+						Ptr<ConstantVelocityMobilityModel> VelUABS = UABSNodes.Get(n)->GetObject<ConstantVelocityMobilityModel>();
+						VelUABS->SetVelocity(Vector(speedUABS, 0,0));//speedUABS, 0));
+						//NS_LOG_UNCOND (VelUABS->GetVelocity());
+					}
+				}
+				else
+				{
+					for (uint16_t n=0 ; n < UABSNodes.GetN(); n++)
+					{
+						Ptr<ConstantVelocityMobilityModel> VelUABS = UABSNodes.Get(n)->GetObject<ConstantVelocityMobilityModel>();
+						VelUABS->SetVelocity(Vector(speedUABS, 0,0));//speedUABS, 0));
+						//NS_LOG_UNCOND (VelUABS->GetVelocity());
+					}
+
+				}
+			}
+			else
+			{
+				speedUABS= 0;
+				for (uint16_t n=0 ; n < UABSNodes.GetN(); n++)
+					{
+						Ptr<ConstantVelocityMobilityModel> VelUABS = UABSNodes.Get(n)->GetObject<ConstantVelocityMobilityModel>();
+						VelUABS->SetVelocity(Vector(speedUABS, 0,0));//speedUABS, 0));
+						//NS_LOG_UNCOND (VelUABS->GetVelocity());
+					}
+
+			}
 
 		}
 
@@ -424,7 +481,7 @@ int transmissionStart = 0;
 			cmd << "python3 UOS-PythonCode.py " << " 2>/dev/null ";
 			//GetClusterCoordinates =  stod(exec(cmd.str().c_str()));
 			GetClusterCoordinates =  exec(cmd.str().c_str());
-			NS_LOG_UNCOND("Coordinates of prioritized Clusters: " + GetClusterCoordinates);
+			
 			ns3::Vector3D CoorPriorities;
 			std::vector<ns3::Vector3D>  CoorPriorities_Vector;
 			
@@ -432,7 +489,8 @@ int transmissionStart = 0;
 			if (!GetClusterCoordinates.empty())
 			{
 				UABSFlag = true;
-							
+				NS_LOG_UNCOND("Coordinates of prioritized Clusters: " + GetClusterCoordinates);
+
 				boost::split(Split_coord_Prior, GetClusterCoordinates, boost::is_any_of(" "), boost::token_compress_on);
 				
 				for (uint16_t i = 0; i < Split_coord_Prior.size()-1; i+=2)
@@ -452,6 +510,7 @@ int transmissionStart = 0;
 			{
 				UABSFlag = false;
 				UABS_On_Flag = false;
+				NS_LOG_UNCOND("No prioritized cluster needed, users to far from each other.");
 			}
 
 			if (UABSFlag == true)
@@ -524,12 +583,15 @@ int transmissionStart = 0;
 				evalvidId++;
 				int startTime = rand() % (int)simTime + 2; // a random number between 2 - simtime (actual 100 segs)
 				uint16_t  port = 8000 * evalvidId + 8000; //to use a different port in every iterac...
-
+				std::stringstream sdTrace;
+        		std::stringstream rdTrace;
+        		sdTrace << "UOS_vidslogs/sd_a01_" << evalvidId; //here there is a problem when is called for the users that are overloading the enb, it overwrites. To fix.
+        		rdTrace << "UOS_vidslogs/rd_a01_" << evalvidId;
 
 			//Video Server
 				EvalvidServerHelper server(port);
-				server.SetAttribute ("SenderTraceFilename", StringValue("src/evalvid/st_highway_cif.st"));
-				server.SetAttribute ("SenderDumpFilename", StringValue("src/evalvid/sd_a01_lte"));
+				server.SetAttribute ("SenderTraceFilename", StringValue("src/evalvid/st_highway_cif.st")); //Old: src/evalvid/st_highway_cif.st
+				server.SetAttribute ("SenderDumpFilename", StringValue(sdTrace.str()));
 				//server.SetAttribute("PacketPayload", UintegerValue(512));
 				ApplicationContainer apps = server.Install(remoteHost);
 				apps.Start (Seconds (1.0));
@@ -537,11 +599,7 @@ int transmissionStart = 0;
 
 			// Clients
 				EvalvidClientHelper client (remoteHostAddr,port);
-		  
-				stringstream s;
-				s << "rd_a" << i << "_lte"; //here there is a problem when is called for the users that are overloading the enb, it overwrites. To fix.
-
-				client.SetAttribute ("ReceiverDumpFilename", StringValue(s.str()));
+				client.SetAttribute ("ReceiverDumpFilename", StringValue(rdTrace.str()));
 				apps = client.Install (ueNodes.Get(i));
 			
 			 
