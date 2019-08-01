@@ -65,7 +65,7 @@ const uint16_t numberOfeNodeBNodes = 4;
 const uint16_t numberOfUENodes = 50; //Number of user to test: 245, 392, 490 (The number of users and their traffic model follow the parameters recommended by the 3GPP)
 const uint16_t numberOfOverloadUENodes = 1; // user that will be connected to an specific enB. 
 const uint16_t numberOfUABS = 6;
-double simTime = 70; //300 secs
+double simTime = 70; // 100 secs || 300 secs
 const int m_distance = 2000; //m_distance between enBs towers.
 // Inter packet interval in ms
 // double interPacketInterval = 1;
@@ -73,7 +73,7 @@ const int m_distance = 2000; //m_distance between enBs towers.
 // uint16_t port = 8000;
 int evalvidId = 0;      
 int eNodeBTxPower = 46; //Set enodeB Power dBm 46dBm --> 20MHz  |  43dBm --> 5MHz
-int UABSTxPower = 0;//33;   //Set UABS Power
+int UABSTxPower = 0;//23;   //Set UABS Power
 uint8_t bandwidth_enb = 100; // 100 RB --> 20MHz  |  25 RB --> 5MHz
 uint8_t bandwidth_UABS = 25; // 100 RB --> 20MHz  |  25 RB --> 5MHz
 //uint8_t bandwidth = 25; // To use with UABS --> tengo que ver si no necesito crear otro LTEhelper solo para los UABS.
@@ -126,11 +126,7 @@ int transmissionStart = 0;
 
 		}
 
-		/*void ns3::PhyStatsCalculator::ReportCurrentCellRsrpSinrCallback(Ptr< PhyStatsCalculator > phyStats, std::string path, uint16_t cellId, uint16_t rnti, double rsrp, double sinr,uint8_t componentCarrierId )
-		{
-			std::cout<< "Time: "<< Simulator::Now().GetSeconds() << " SINR: " << 10*log(sinr) << " Cell ID:"<< cellId <<" RSRP: "<< 10*log(1000*rsrp) << endl;
-		}
-		*/
+		
 
 		void ns3::PhyStatsCalculator::ReportUeSinr(uint16_t cellId, uint64_t imsi, uint16_t rnti, double sinrLinear, uint8_t componentCarrierId)
 		{
@@ -170,7 +166,6 @@ int transmissionStart = 0;
 			Ptr<LteEnbPhy> UABSPhy;
 			
 			int i=0; 
-			//int q=0;
 			int k=0;
 
 	 
@@ -189,7 +184,6 @@ int transmissionStart = 0;
 				NS_ASSERT (enBposition != 0);
 				Vector pos = enBposition->GetPosition ();
 				enB  << pos.x << "," << pos.y << "," << pos.z <<"," << enBCellId <<std::endl;
-				//enB.close();
 				i++;
 			}
 			enB.close();
@@ -197,43 +191,24 @@ int transmissionStart = 0;
 
 			for (NodeContainer::Iterator j = ueNodes.Begin ();j != ueNodes.End (); ++j)
 			{
-					
-
-				// //Ptr<LteUeNetDevice> UEConnectedenB = ueLteDevs.Get(q)->GetObject<LteUeNetDevice>()->GetTargetEnb();
-				// Ptr<LteEnbNetDevice> UEConnectedenB = ueLteDevs.Get(1)->GetObject<LteUeNetDevice>()->GetTargetEnb();
-				// //NS_ASSERT (UEConnectedenB != 0);
-				// //UEConnectedCellId = ueLteDevs.Get(q)->GetObject<LteUeNetDevice>()->GetTargetEnb();
-				// NS_LOG_UNCOND("UE: ");
-				// NS_LOG_UNCOND(ueLteDevs.Get(1)->GetObject<LteUeNetDevice>()->GetTargetEnb());				
-
 				Ptr<Node> object = *j;
 				Ptr<MobilityModel> UEposition = object->GetObject<MobilityModel> ();
 				NS_ASSERT (UEposition != 0);
 				Vector pos = UEposition->GetPosition ();
 				UE << pos.x << "," << pos.y << "," << pos.z << std::endl;
-				// //UE.close();
-				//q++;
+				
 			}
 			UE.close();
 
 			for (NodeContainer::Iterator j = ueOverloadNodes.Begin ();j != ueOverloadNodes.End (); ++j)
 			{
-					
-
-				// //Ptr<LteUeNetDevice> UEConnectedenB = ueLteDevs.Get(q)->GetObject<LteUeNetDevice>()->GetTargetEnb();
-				// Ptr<LteEnbNetDevice> UEConnectedenB = ueLteDevs.Get(1)->GetObject<LteUeNetDevice>()->GetTargetEnb();
-				// //NS_ASSERT (UEConnectedenB != 0);
-				// //UEConnectedCellId = ueLteDevs.Get(q)->GetObject<LteUeNetDevice>()->GetTargetEnb();
-				// NS_LOG_UNCOND("UE: ");
-				// NS_LOG_UNCOND(ueLteDevs.Get(1)->GetObject<LteUeNetDevice>()->GetTargetEnb());				
 
 				Ptr<Node> object = *j;
 				Ptr<MobilityModel> OverloadingUEposition = object->GetObject<MobilityModel> ();
 				NS_ASSERT (OverloadingUEposition != 0);
 				Vector pos = OverloadingUEposition->GetPosition ();
 				OverloadingUE << pos.x << "," << pos.y << "," << pos.z << std::endl;
-				// //UE.close();
-				//q++;
+				
 			}
 			OverloadingUE.close();
 
@@ -256,7 +231,7 @@ int transmissionStart = 0;
 				NS_ASSERT (UABSposition != 0);
 				Vector pos = UABSposition->GetPosition ();
 				UABS << pos.x << "," << pos.y << "," << pos.z <<"," << UABSCellId << std::endl;
-				//enB.close();
+				
 				k++;
 			}
 
@@ -590,7 +565,7 @@ int transmissionStart = 0;
 
 			//Video Server
 				EvalvidServerHelper server(port);
-				server.SetAttribute ("SenderTraceFilename", StringValue("src/evalvid/st_highway_cif.st")); //Old: src/evalvid/st_highway_cif.st
+				server.SetAttribute ("SenderTraceFilename", StringValue("evalvid_videos/st_container_cif_h264_300_20.st")); //Old: src/evalvid/st_highway_cif.st
 				server.SetAttribute ("SenderDumpFilename", StringValue(sdTrace.str()));
 				//server.SetAttribute("PacketPayload", UintegerValue(512));
 				ApplicationContainer apps = server.Install(remoteHost);
@@ -794,7 +769,7 @@ int transmissionStart = 0;
 		//Config::SetDefault ("ns3::LteEnbRrc::HandoverLeavingTimeout", TimeValue (Seconds (3)));
 
 		//Pathlossmodel
-		if (scen == 1 || scen == 3)
+		if (scen == 0 || scen == 1 || scen == 3)
 		{
 			NS_LOG_UNCOND("Pathloss model: Nakagami Propagation ");
 			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::NakagamiPropagationLossModel"));
@@ -1035,32 +1010,32 @@ int transmissionStart = 0;
 
 		// ------------------- Install LTE Devices to the nodes --------------------------------//
 		NetDeviceContainer ueLteDevs = lteHelper->InstallUeDevice (ueNodes);
+		if(scen =! 0)
+		{
 		NetDeviceContainer UABSLteDevs = lteHelper->InstallEnbDevice (UABSNodes);
 		NetDeviceContainer OverloadingUeLteDevs = lteHelper->InstallUeDevice (ueOverloadNodes);
-		
+		}
 
 		
-
+		if(scen =! 0)
+		{
 		// ---------------Get position of enBs, UABSs and UEs. -------------------//
 		Simulator::Schedule(Seconds(5), &GetPositionUEandenB,ueNodes,enbNodes,UABSNodes,enbLteDevs,UABSLteDevs,ueOverloadNodes);
-		
-	  	
-
-		
-		
-		// //Set Power of UABS, initially 0 to simulate a turned off UABS.
-		if (scen == 2 || scen == 4)
-		{
-			// Ptr<LteEnbPhy> UABSPhy;
-	 
-			// for( uint16_t i = 0; i < UABSLteDevs.GetN(); i++) 
-			// {
-			// 	UABSPhy = UABSLteDevs.Get(i)->GetObject<LteEnbNetDevice>()->GetPhy();
-			// 	UABSPhy->SetTxPower(UABSTxPower);
-			// 	// NS_LOG_UNCOND("UABS TX Power: ");
-			// 	// NS_LOG_UNCOND(UABSPhy->GetTxPower());
-			// }
 		}
+
+		// // //Set Power of UABS, initially 0 to simulate a turned off UABS.
+		// if (scen == 2 || scen == 4)
+		// {
+		// 	// Ptr<LteEnbPhy> UABSPhy;
+	 
+		// 	// for( uint16_t i = 0; i < UABSLteDevs.GetN(); i++) 
+		// 	// {
+		// 	// 	UABSPhy = UABSLteDevs.Get(i)->GetObject<LteEnbNetDevice>()->GetPhy();
+		// 	// 	UABSPhy->SetTxPower(UABSTxPower);
+		// 	// 	// NS_LOG_UNCOND("UABS TX Power: ");
+		// 	// 	// NS_LOG_UNCOND(UABSPhy->GetTxPower());
+		// 	// }
+		// }
 
 		//---------------------- Install the IP stack on the UEs (regular UE and Overloding-UE) ---------------------- //
 		NodeContainer ues_all;
@@ -1133,10 +1108,11 @@ int transmissionStart = 0;
 		// activate EPSBEARER
 		lteHelper->ActivateDedicatedEpsBearer (ueLteDevs, EpsBearer (EpsBearer::NGBR_VIDEO_TCP_DEFAULT), EpcTft::Default ());
 	  
-	  
+	  	if(scen =! 0)
+		{
 		//get Sinr
 		Simulator::Schedule(Seconds(5), &GetSinrUE,ueLteDevs,ueNodes, ueOverloadNodes, OverloadingUeLteDevs);
-
+		}
 
 		//Run Python Command to get centroids
 		if (scen == 2 || scen == 4)
