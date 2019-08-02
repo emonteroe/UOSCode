@@ -62,7 +62,7 @@
 using namespace ns3;
 
 const uint16_t numberOfeNodeBNodes = 4;
-const uint16_t numberOfUENodes = 50; //Number of user to test: 245, 392, 490 (The number of users and their traffic model follow the parameters recommended by the 3GPP)
+const uint16_t numberOfUENodes = 70; //Number of user to test: 245, 392, 490 (The number of users and their traffic model follow the parameters recommended by the 3GPP)
 const uint16_t numberOfOverloadUENodes = 1; // user that will be connected to an specific enB. 
 const uint16_t numberOfUABS = 6;
 double simTime = 70; // 100 secs || 300 secs
@@ -96,7 +96,7 @@ uint32_t DropPacketsum = 0;
 uint32_t LostPacketsum = 0;
 double Delaysum = 0;
 std::stringstream cmd;
-double UABSHeight = 30;
+double UABSHeight = 40;
 double enBHeight = 30;
 uint32_t nRuns = 1;
 uint32_t randomSeed = 1234;
@@ -468,10 +468,10 @@ int transmissionStart = 0;
 
 				boost::split(Split_coord_Prior, GetClusterCoordinates, boost::is_any_of(" "), boost::token_compress_on);
 				
-				for (uint16_t i = 0; i < Split_coord_Prior.size()-1; i+=2)
+				for (uint16_t i = 0; i < Split_coord_Prior.size()-2; i+=3)
 				{
 					//NS_LOG_UNCOND(Split_coord_Prior[i]);
-					//NS_LOG_UNCOND(Split_coord_Prior[i] << "," << Split_coord_Prior[i+1]<< ", 40"<<std::endl);
+					NS_LOG_UNCOND(Split_coord_Prior[i] << "," << Split_coord_Prior[i+1]<< "," << Split_coord_Prior[i+2] <<std::endl);
 					CoorPriorities = Vector(std::stod(Split_coord_Prior[i]),std::stod(Split_coord_Prior[i+1]),UABSHeight);
 					//NS_LOG_UNCOND("Funct GetPrioritizedClusters: ");
 					//NS_LOG_UNCOND(CoorPriorities);
