@@ -63,7 +63,7 @@ using namespace ns3;
 
 const uint16_t numberOfeNodeBNodes = 4;
 const uint16_t numberOfUENodes = 70; //Number of user to test: 245, 392, 490 (The number of users and their traffic model follow the parameters recommended by the 3GPP)
-const uint16_t numberOfOverloadUENodes = 1; // user that will be connected to an specific enB. 
+const uint16_t numberOfOverloadUENodes = 0; // user that will be connected to an specific enB. 
 const uint16_t numberOfUABS = 6;
 double simTime = 70; // 100 secs || 300 secs
 const int m_distance = 2000; //m_distance between enBs towers.
@@ -311,6 +311,8 @@ int transmissionStart = 0;
 		void SetTXPowerPositionAndVelocityUABS(NodeContainer UABSNodes, double speedUABS, NetDeviceContainer UABSLteDevs, std::vector<ns3::Vector3D> CoorPriorities_Vector)
 		{
 			Ptr<LteEnbPhy> UABSPhy;
+			std::vector<ns3::Vector3D> splitcoordinate_uabsprior;
+			uint16_t UABSCellId;
 			
 			//Necesito hacer un filtro de que cuando CoorPriorities_Vector venga con las coordenadas y cual UABS va pa X coordenada buscar cual UABS tiene cual CellID y entonces colocar ese UABS en la coordenada.
 	 
@@ -319,6 +321,8 @@ int transmissionStart = 0;
 			if (UABSFlag == true && UABS_On_Flag == false) // revisar esta logica
 			{
 				UABSTxPower = 23;
+
+
 				if (CoorPriorities_Vector.size() <= UABSNodes.GetN())
 				{
 					for( uint16_t i = 0; i < CoorPriorities_Vector.size(); i++) 
@@ -358,13 +362,32 @@ int transmissionStart = 0;
 
 			//--------------------Set Position of UABS / or trajectory to go to assist a low SINR Area:--------------------//
 			//If la posicion cambio y el UABS_On_Flag esta True, setea la nueva posicion.
-			
+			double test =0;
+			for (uint16_t i=0 ; i < UABSLteDevs.GetN(); i++)
+				{
+					UABSCellId = UABSLteDevs.Get(i)->GetObject<LteEnbNetDevice>()->GetCellId();
+					for (uint16_t k=0 ; k < CoorPriorities_Vector.size()-2; k+=3)
+					{
+						test = std::stod(CoorPriorities_Vector[k+2]);
+						if (UABSCellId == (int)test )
+						{
+							NS_LOG_UNCOND("UABSCellId:");
+							NS_LOG_UNCOND(UABSCellId);
+							NS_LOG_UNCOND("CoorPriorities_Vector_UABS_CellID:");
+							NS_LOG_UNCOND(CoorPriorities_Vector[k+2]);
+						}
+					}
+
+					}
 			// NS_LOG_UNCOND("CoorPriorities_Vector:");
 			// NS_LOG_UNCOND(CoorPriorities_Vector.size());
 			// NS_LOG_UNCOND(" UABS quantity nodes:");
 			// NS_LOG_UNCOND(UABSNodes.GetN());
 			if (CoorPriorities_Vector.size() <= UABSNodes.GetN())
 			{
+
+
+				
 				for (uint16_t k=0 ; k < CoorPriorities_Vector.size(); k++)
 					{	
 						Ptr<ConstantVelocityMobilityModel> PosUABS = UABSNodes.Get(k)->GetObject<ConstantVelocityMobilityModel>();
@@ -472,7 +495,8 @@ int transmissionStart = 0;
 				{
 					//NS_LOG_UNCOND(Split_coord_Prior[i]);
 					NS_LOG_UNCOND(Split_coord_Prior[i] << "," << Split_coord_Prior[i+1]<< "," << Split_coord_Prior[i+2] <<std::endl);
-					CoorPriorities = Vector(std::stod(Split_coord_Prior[i]),std::stod(Split_coord_Prior[i+1]),UABSHeight);
+					CoorPriorities = Vector(std::stod(Split_coord_Prior[i]),std::stod(Split_coord_Prior[i+1]),std::stod(Split_coord_Prior[i+2])); //Vector containing: [X,Y,KnnUABSPrediction]
+					//CoorPriorities = Vector(std::stod(Split_coord_Prior[i]),std::stod(Split_coord_Prior[i+1]),UABSHeight); //Old way of passing the coordinates
 					//NS_LOG_UNCOND("Funct GetPrioritizedClusters: ");
 					//NS_LOG_UNCOND(CoorPriorities);
 					CoorPriorities_Vector.push_back(CoorPriorities); 
@@ -565,9 +589,9 @@ int transmissionStart = 0;
 
 			//Video Server
 				EvalvidServerHelper server(port);
-				server.SetAttribute ("SenderTraceFilename", StringValue("evalvid_videos/st_container_cif_h264_300_20.st")); //Old: src/evalvid/st_highway_cif.st
+				server.SetAttribute ("SenderTraceFilename", StringValue("evalvid_videos/st_akiyo_cif_h264_300_18")); //Old: src/evalvid/st_highway_cif.st
 				server.SetAttribute ("SenderDumpFilename", StringValue(sdTrace.str()));
-				//server.SetAttribute("PacketPayload", UintegerValue(512));
+				server.SetAttribute("PacketPayload", UintegerValue(512));
 				ApplicationContainer apps = server.Install(remoteHost);
 				apps.Start (Seconds (1.0));
 				apps.Stop (Seconds (simTime));
@@ -771,11 +795,13 @@ int transmissionStart = 0;
 		//Pathlossmodel
 		if (scen == 0 || scen == 1 || scen == 3)
 		{
-			NS_LOG_UNCOND("Pathloss model: Nakagami Propagation ");
-			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::NakagamiPropagationLossModel"));
-			// lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
-	  //   	lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
-	  //   	Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
+			// NS_LOG_UNCOND("Pathloss model: Nakagami Propagation ");
+			// lteHelper->SetAttribute("PathlossModel",StringValue("ns3::NakagamiPropagationLossModel"));
+
+			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
+	    	lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
+	    	lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
+	    	Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
 		}
 
 		//lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::FriisPropagationLossModel"));
@@ -785,6 +811,7 @@ int transmissionStart = 0;
 			NS_LOG_UNCOND("Pathloss model: OkumuraHata ");
 			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
 	    	lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
+	    	lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
 	    	Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
 	    }
 
