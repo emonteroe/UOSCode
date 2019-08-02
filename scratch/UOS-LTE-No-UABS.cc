@@ -308,7 +308,7 @@ int transmissionStart = 0;
 		}
 
 
-		void SetTXPowerPositionAndVelocityUABS(NodeContainer UABSNodes, double speedUABS, NetDeviceContainer UABSLteDevs, std::vector<ns3::Vector3D> CoorPriorities_Vector)
+		void SetTXPowerPositionAndVelocityUABS(NodeContainer UABSNodes, double speedUABS, NetDeviceContainer UABSLteDevs, std::vector<ns3::Vector3D> CoorPriorities_Vector, double UABSPriority[])
 		{
 			Ptr<LteEnbPhy> UABSPhy;
 			std::vector<ns3::Vector3D> splitcoordinate_uabsprior;
@@ -362,21 +362,23 @@ int transmissionStart = 0;
 
 			//--------------------Set Position of UABS / or trajectory to go to assist a low SINR Area:--------------------//
 			//If la posicion cambio y el UABS_On_Flag esta True, setea la nueva posicion.
-			double test =0;
+			//double test =0;
 			for (uint16_t i=0 ; i < UABSLteDevs.GetN(); i++)
 				{
 					UABSCellId = UABSLteDevs.Get(i)->GetObject<LteEnbNetDevice>()->GetCellId();
-					for (uint16_t k=0 ; k < CoorPriorities_Vector.size()-2; k+=3)
-					{
-						test = std::stod(CoorPriorities_Vector[k+2]);
-						if (UABSCellId == (int)test )
+					 for (uint16_t k=0 ; k < CoorPriorities_Vector.size(); k++)
+					 {
+					
+						//NS_LOG_UNCOND(CoorPriorities_Vector[k+2]);
+						if (UABSCellId == UABSPriority[k] )
 						{
-							NS_LOG_UNCOND("UABSCellId:");
+						 	NS_LOG_UNCOND("Asigna el maldito UABS");
+						 	NS_LOG_UNCOND("UABSCellId:");
 							NS_LOG_UNCOND(UABSCellId);
-							NS_LOG_UNCOND("CoorPriorities_Vector_UABS_CellID:");
-							NS_LOG_UNCOND(CoorPriorities_Vector[k+2]);
-						}
-					}
+							NS_LOG_UNCOND("UABS_Prior_CellID:");
+							NS_LOG_UNCOND(UABSPriority[i]);
+						 }
+				 	}
 
 					}
 			// NS_LOG_UNCOND("CoorPriorities_Vector:");
@@ -482,6 +484,7 @@ int transmissionStart = 0;
 			
 			ns3::Vector3D CoorPriorities;
 			std::vector<ns3::Vector3D>  CoorPriorities_Vector;
+			double UABSPriority[0];
 			
 			int j=0;
 			if (!GetClusterCoordinates.empty())
@@ -490,13 +493,16 @@ int transmissionStart = 0;
 				NS_LOG_UNCOND("Coordinates of prioritized Clusters: " + GetClusterCoordinates);
 
 				boost::split(Split_coord_Prior, GetClusterCoordinates, boost::is_any_of(" "), boost::token_compress_on);
-				
+				UABSPriority [Split_coord_Prior.size()];
 				for (uint16_t i = 0; i < Split_coord_Prior.size()-2; i+=3)
 				{
 					//NS_LOG_UNCOND(Split_coord_Prior[i]);
-					NS_LOG_UNCOND(Split_coord_Prior[i] << "," << Split_coord_Prior[i+1]<< "," << Split_coord_Prior[i+2] <<std::endl);
-					CoorPriorities = Vector(std::stod(Split_coord_Prior[i]),std::stod(Split_coord_Prior[i+1]),std::stod(Split_coord_Prior[i+2])); //Vector containing: [X,Y,KnnUABSPrediction]
-					//CoorPriorities = Vector(std::stod(Split_coord_Prior[i]),std::stod(Split_coord_Prior[i+1]),UABSHeight); //Old way of passing the coordinates
+					//NS_LOG_UNCOND(Split_coord_Prior[i] << "," << Split_coord_Prior[i+1]<< "," << Split_coord_Prior[i+2] <<std::endl);
+					UABSPriority [i] = std::stod(Split_coord_Prior[i+2]);
+					NS_LOG_UNCOND("UABS Priority:");
+					NS_LOG_UNCOND(UABSPriority[i]);
+					//CoorPriorities = Vector(std::stod(Split_coord_Prior[i]),std::stod(Split_coord_Prior[i+1]),std::stod(Split_coord_Prior[i+2])); //Vector containing: [X,Y,KnnUABSPrediction]
+					CoorPriorities = Vector(std::stod(Split_coord_Prior[i]),std::stod(Split_coord_Prior[i+1]),UABSHeight); //Old way of passing the coordinates
 					//NS_LOG_UNCOND("Funct GetPrioritizedClusters: ");
 					//NS_LOG_UNCOND(CoorPriorities);
 					CoorPriorities_Vector.push_back(CoorPriorities); 
@@ -516,7 +522,7 @@ int transmissionStart = 0;
 			{
 				
 				NS_LOG_UNCOND(std::to_string(j) <<" UABS needed: Setting TXPower, Velocity and position");
-				SetTXPowerPositionAndVelocityUABS(UABSNodes, speedUABS, UABSLteDevs, CoorPriorities_Vector); 
+				SetTXPowerPositionAndVelocityUABS(UABSNodes, speedUABS, UABSLteDevs, CoorPriorities_Vector, UABSPriority); 
 			}
 			
 			Simulator::Schedule(Seconds(6), &GetPrioritizedClusters,UABSNodes,  speedUABS,  UABSLteDevs);
