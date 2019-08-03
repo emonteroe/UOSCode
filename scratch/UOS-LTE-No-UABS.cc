@@ -526,7 +526,9 @@ int transmissionStart = 0;
 			for (uint16_t i = 0; i < ueNodes.GetN(); i++) 
 			{
 				evalvidId++;
-				int startTime = rand() % (int)simTime + 2; // a random number between 2 - simtime (actual 100 segs)
+				//int startTime = rand() % (int)simTime + 2; // a random number between 2 - simtime (actual 100 segs)
+				int startTime = rand() % 40 + 20;
+				NS_LOG_UNCOND("Node " << i << " requesting video at " << startTime << "\n");
 				uint16_t  port = 8000 * evalvidId + 8000; //to use a different port in every iterac...
 				std::stringstream sdTrace;
         		std::stringstream rdTrace;
@@ -535,7 +537,7 @@ int transmissionStart = 0;
 
 			//Video Server
 				EvalvidServerHelper server(port);
-				server.SetAttribute ("SenderTraceFilename", StringValue("evalvid_videos/st_akiyo_cif_h264_300_18")); //Old: src/evalvid/st_highway_cif.st
+				server.SetAttribute ("SenderTraceFilename", StringValue("evalvid_videos/st_highway_cif.st")); //Old: src/evalvid/st_highway_cif.st
 				server.SetAttribute ("SenderDumpFilename", StringValue(sdTrace.str()));
 				server.SetAttribute("PacketPayload", UintegerValue(512));
 				ApplicationContainer apps = server.Install(remoteHost);
