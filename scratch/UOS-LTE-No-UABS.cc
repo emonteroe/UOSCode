@@ -62,7 +62,7 @@
 using namespace ns3;
 
 const uint16_t numberOfeNodeBNodes = 4;
-const uint16_t numberOfUENodes = 100; //Number of user to test: 245, 392, 490 (The number of users and their traffic model follow the parameters recommended by the 3GPP)
+const uint16_t numberOfUENodes = 70; //Number of user to test: 245, 392, 490 (The number of users and their traffic model follow the parameters recommended by the 3GPP)
 const uint16_t numberOfOverloadUENodes = 0; // user that will be connected to an specific enB. 
 const uint16_t numberOfUABS = 6;
 double simTime = 120; // 120 secs ||100 secs || 300 secs
@@ -528,7 +528,7 @@ int transmissionStart = 0;
 				evalvidId++;
 				//int startTime = rand() % (int)simTime + 2; // a random number between 2 - simtime (actual 100 segs)
 				int startTime = rand() % 40 + 20;
-				NS_LOG_UNCOND("Node " << i << " requesting video at " << startTime << "\n");
+				//NS_LOG_UNCOND("Node " << i << " requesting video at " << startTime << "\n");
 				uint16_t  port = 8000 * evalvidId + 8000; //to use a different port in every iterac...
 				std::stringstream sdTrace;
         		std::stringstream rdTrace;
@@ -537,7 +537,7 @@ int transmissionStart = 0;
 
 			//Video Server
 				EvalvidServerHelper server(port);
-				server.SetAttribute ("SenderTraceFilename", StringValue("evalvid_videos/st_highway_cif.st")); //Old: src/evalvid/st_highway_cif.st
+				server.SetAttribute ("SenderTraceFilename", StringValue("evalvid_videos/st_akiyo_cif_h264_300_18")); //Old: src/evalvid/st_highway_cif.st
 				server.SetAttribute ("SenderDumpFilename", StringValue(sdTrace.str()));
 				server.SetAttribute("PacketPayload", UintegerValue(512));
 				ApplicationContainer apps = server.Install(remoteHost);
