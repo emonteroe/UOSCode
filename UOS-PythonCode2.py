@@ -24,17 +24,17 @@ import re
 # scatter plot, dots colored by class value
 #print(X.shape)
 
-with open('/home/emanuel/Desktop/ns-3/source/ns-3.29/enBs') as fenBs:
-
+#with open('/home/emanuel/Desktop/ns-3/source/ns-3.29/enBs') as fenBs:
+with open('enBs') as fenBs:
     data1 = np.array(list((float(x), float(y), float(z), int(cellid)) for x, y, z, cellid in csv.reader(fenBs, delimiter= ',')))
     
-with open('/home/emanuel/Desktop/ns-3/source/ns-3.29/LTEUEs') as fUEs:
+with open('LTEUEs') as fUEs:
     data2 = np.array(list((float(x), float(y), float(z)) for x, y, z in csv.reader(fUEs, delimiter= ',')))
     
-with open('/home/emanuel/Desktop/ns-3/source/ns-3.29/UABSs') as fUABS:
+with open('UABSs') as fUABS:
     data3 = np.array(list((float(x), float(y), float(z), int(cellid)) for x, y, z, cellid in csv.reader(fUABS, delimiter= ',')))
 
-with open('/home/emanuel/Desktop/ns-3/source/ns-3.29/UEsLowSinr') as fUEsLow:
+with open('UEsLowSinr') as fUEsLow:
     data4 = np.array(list((float(x), float(y), float(z), float (Sinr), int (Imsi),int(cellid)) for x, y, z, Sinr,Imsi, cellid in csv.reader(fUEsLow, delimiter= ',')))
 
 #print("enBs: "+ str(data1))
@@ -137,8 +137,8 @@ CopySINRAvg = SINRAvg.copy()
 SINRAvgPrioritized = []
 for i in range(len(SINRAvg)):
     #print("SINR Max:" + str(max(CopySINRAvg)))
-    SINRAvgPrioritized.append(max(CopySINRAvg))
-    CopySINRAvg.remove(max(CopySINRAvg))
+    SINRAvgPrioritized.append(min(CopySINRAvg))
+    CopySINRAvg.remove(min(CopySINRAvg))
    
        
      
@@ -163,8 +163,8 @@ for i in range(len(SINRAvg)):
 #    print(Centroids[int(index_SAP[0])])
     CentroidsPrio.append(Centroids[int(index_SAP[0])])
     
-for i in CentroidsPrio:
-    print("{} {} ".format(i[0], i[1]))
+#for i in CentroidsPrio:
+#    print("{} {} ".format(i[0], i[1]))
 #centroidsarray = np.asarray(Centroids)
 #print(centroidsarray)
     
@@ -173,11 +173,20 @@ for i in CentroidsPrio:
 #  KNN Implementation for finding the nearest UABS to the X Centroid.
 # Create the knn model.
 # Look at the five closest neighbors.
-Kneighbors = 2
-knn = KNeighborsClassifier(n_neighbors= Kneighbors, weights= "uniform" , algorithm="auto")
-knn.fit(UABSCoordinates,cellid3)
+if  (CentroidsPrio):
+      Kneighbors = 2
+      knn = KNeighborsClassifier(n_neighbors= Kneighbors, weights= "uniform" , algorithm="auto")
+      knn.fit(UABSCoordinates,cellid3)
 #predict witch UABS will be serving to the X Centroid.
-Knnpredict= knn.predict(CentroidsPrio)
+      Knnpredict= knn.predict(CentroidsPrio)
+      j=0
+      for i in CentroidsPrio:
+            print("{} {} {} ".format(i[0], i[1], Knnpredict[j]))
+            j+=1 
+else:
+      for i in CentroidsPrio:
+            print("{} {} ".format(i[0], i[1]))
+            
 
 #scores = {}
 #scores_list = []
