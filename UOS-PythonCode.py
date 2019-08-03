@@ -67,7 +67,7 @@ X = np.array(list(zip(x3,y3)))
 #print(X.size)
 
 ##Clustering with DBSCAN
-DBClusters = DBSCAN( eps=500, min_samples=2, metric ='euclidean',algorithm = 'auto')
+DBClusters = DBSCAN( eps=1000, min_samples=2, metric ='euclidean',algorithm = 'auto')
 DBClusters.fit(X)
 #DBClusters.labels_
 
@@ -168,8 +168,8 @@ for i in range(len(SINRAvg)):
 #    print(Centroids[int(index_SAP[0])])
     CentroidsPrio.append(Centroids[int(index_SAP[0])])
     
-for i in CentroidsPrio:
-    print("{} {} ".format(i[0], i[1]))
+#for i in CentroidsPrio:
+#    print("{} {} ".format(i[0], i[1]))
 #centroidsarray = np.asarray(Centroids)
 #print(centroidsarray)
 
@@ -178,11 +178,19 @@ for i in CentroidsPrio:
 #  KNN Implementation for finding the nearest UABS to the X Centroid.
 # Create the knn model.
 # Look at the five closest neighbors.
-# Kneighbors = 2
-# knn = KNeighborsClassifier(n_neighbors= Kneighbors, weights= "uniform" , algorithm="auto")
-# knn.fit(UABSCoordinates,cellid3)
-# #predict witch UABS will be serving to the X Centroid.
-# Knnpredict= knn.predict(CentroidsPrio)
+if  (CentroidsPrio):
+      Kneighbors = 2
+      knn = KNeighborsClassifier(n_neighbors= Kneighbors, weights= "uniform" , algorithm="auto")
+      knn.fit(UABSCoordinates,cellid3)
+#predict witch UABS will be serving to the X Centroid.
+      Knnpredict= knn.predict(CentroidsPrio)
+      j=0
+      for i in CentroidsPrio:
+            print("{} {} {} ".format(i[0], i[1], Knnpredict[j]))
+            j+=1 
+else:
+      for i in CentroidsPrio:
+            print("{} {} ".format(i[0], i[1]))
 
 #scores = {}
 #scores_list = []
