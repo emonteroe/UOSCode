@@ -62,10 +62,10 @@
 using namespace ns3;
 
 const uint16_t numberOfeNodeBNodes = 4;
-const uint16_t numberOfUENodes = 70; //Number of user to test: 245, 392, 490 (The number of users and their traffic model follow the parameters recommended by the 3GPP)
+const uint16_t numberOfUENodes = 100; //Number of user to test: 245, 392, 490 (The number of users and their traffic model follow the parameters recommended by the 3GPP)
 const uint16_t numberOfOverloadUENodes = 0; // user that will be connected to an specific enB. 
 const uint16_t numberOfUABS = 6;
-double simTime = 70; // 100 secs || 300 secs
+double simTime = 120; // 120 secs ||100 secs || 300 secs
 const int m_distance = 2000; //m_distance between enBs towers.
 // Inter packet interval in ms
 // double interPacketInterval = 1;
@@ -260,8 +260,8 @@ int transmissionStart = 0;
 			//for(uint16_t i = 0; i < ueLteDevs.GetN(); i++)
 			//{
 				for (NodeContainer::Iterator j = ueNodes.Begin ();j != ueNodes.End (); ++j)
-			{
-				UEImsi = ueLteDevs.Get(i)->GetObject<LteUeNetDevice>()->GetImsi();
+				{
+					UEImsi = ueLteDevs.Get(i)->GetObject<LteUeNetDevice>()->GetImsi();
 					if (ue_imsi_sinr[UEImsi-1] < minSINR) 
 					{	
 						//NS_LOG_UNCOND("Sinr: "<< ue_imsi_sinr[UEImsi] << " Imsi: " << UEImsi );
@@ -276,15 +276,15 @@ int transmissionStart = 0;
 						++k;
 						
 					}
-			}
+				}
 			NS_LOG_UNCOND("Users with low sinr: "); //To know if after an UABS is functioning this number decreases.
 			NS_LOG_UNCOND(k);
 
 			// for(uint16_t i = 0; i < OverloadingUeLteDevs.GetN(); i++)
 			// {
 				for (NodeContainer::Iterator j = ueOverloadNodes.Begin ();j != ueOverloadNodes.End (); ++j)
-			{
-				UEOverloadImsi = OverloadingUeLteDevs.Get(q)->GetObject<LteUeNetDevice>()->GetImsi();
+				{
+					UEOverloadImsi = OverloadingUeLteDevs.Get(q)->GetObject<LteUeNetDevice>()->GetImsi();
 					if (ue_imsi_sinr[UEOverloadImsi-1] < minSINR) // revisar aqui si tengo que poner uephy-1 (imsi-1)
 					{	
 						//NS_LOG_UNCOND("Sinr: "<< ue_imsi_sinr[UEImsi] << " Imsi: " << UEImsi );
@@ -311,152 +311,100 @@ int transmissionStart = 0;
 		void SetTXPowerPositionAndVelocityUABS(NodeContainer UABSNodes, double speedUABS, NetDeviceContainer UABSLteDevs, std::vector<ns3::Vector3D> CoorPriorities_Vector, double UABSPriority[])
 		{
 			Ptr<LteEnbPhy> UABSPhy;
-			std::vector<ns3::Vector3D> splitcoordinate_uabsprior;
 			uint16_t UABSCellId;
 			
-			//Necesito hacer un filtro de que cuando CoorPriorities_Vector venga con las coordenadas y cual UABS va pa X coordenada buscar cual UABS tiene cual CellID y entonces colocar ese UABS en la coordenada.
-	 
-			//Turn on or off UABS TX Power:
-			//If el UABS_On_Flag o el UABSFlag esta True, set la potencia, de lo contrario mantenla en 0 (apagado).
-			if (UABSFlag == true && UABS_On_Flag == false) // revisar esta logica
+			if (UABSFlag == true )//&& UABS_On_Flag == false) 
 			{
 				UABSTxPower = 23;
-
+				speedUABS = 10;
 
 				if (CoorPriorities_Vector.size() <= UABSNodes.GetN())
 				{
-					for( uint16_t i = 0; i < CoorPriorities_Vector.size(); i++) 
-					{
-						UABSPhy = UABSLteDevs.Get(i)->GetObject<LteEnbNetDevice>()->GetPhy();
-						UABSPhy->SetTxPower(UABSTxPower);
-						// NS_LOG_UNCOND("UABS TX Power: ");
-						// NS_LOG_UNCOND(UABSPhy->GetTxPower());
-						//lteHelper->AttachToClosestEnb (ueLteDevs, UABSLteDevs);
+				
+					for (uint16_t k=0 ; k < CoorPriorities_Vector.size(); k++)
+					{	
 						
-					}
+						for (uint16_t i=0 ; i < UABSLteDevs.GetN(); i++)
+						{
+							UABSCellId = UABSLteDevs.Get(i)->GetObject<LteEnbNetDevice>()->GetCellId();
+							if (UABSPriority[k] == UABSCellId)
+							{
+								//--------------------Set Position of UABS / or trajectory to go to assist a low SINR Area:--------------------//
+								NS_LOG_UNCOND("UABSCellId:");
+								NS_LOG_UNCOND(UABSCellId);
+								NS_LOG_UNCOND("UABS_Prior_CellID:");
+								NS_LOG_UNCOND(UABSPriority[k]);
+								Ptr<ConstantVelocityMobilityModel> PosUABS = UABSNodes.Get(i)->GetObject<ConstantVelocityMobilityModel>();
+								PosUABS->SetPosition(CoorPriorities_Vector.at(k));
+								NS_LOG_UNCOND (PosUABS->GetPosition());
+
+								//----------------------Turn on UABS TX Power-----------------------//
+								UABSPhy = UABSLteDevs.Get(i)->GetObject<LteEnbNetDevice>()->GetPhy();
+								UABSPhy->SetTxPower(UABSTxPower);
+
+								//-------------------Set Velocity of UABS to start moving:----------------------//
+								Ptr<ConstantVelocityMobilityModel> VelUABS = UABSNodes.Get(i)->GetObject<ConstantVelocityMobilityModel>();
+								VelUABS->SetVelocity(Vector(speedUABS, 0,0));
+								//NS_LOG_UNCOND (VelUABS->GetVelocity());
+							}
+				 		}
+
+					}	
 				}
 				else
 				{
-					for( uint16_t i = 0; i < UABSLteDevs.GetN(); i++) 
-					{
-						UABSPhy = UABSLteDevs.Get(i)->GetObject<LteEnbNetDevice>()->GetPhy();
-						UABSPhy->SetTxPower(UABSTxPower);
-						
-					}
+					for (uint16_t i=0 ; i < UABSNodes.GetN(); i++)
+					{	
+						UABSCellId = UABSLteDevs.Get(i)->GetObject<LteEnbNetDevice>()->GetCellId();
+						for (uint16_t k=0 ; k < CoorPriorities_Vector.size(); k++)
+						{
+							if (UABSCellId == UABSPriority[k])
+							{
+								//--------------------Set Position of UABS / or trajectory to go to assist a low SINR Area:--------------------//
+								Ptr<ConstantVelocityMobilityModel> PosUABS = UABSNodes.Get(i)->GetObject<ConstantVelocityMobilityModel>();
+								PosUABS->SetPosition(CoorPriorities_Vector.at(k));
+								//NS_LOG_UNCOND("Temp: ");
+								//NS_LOG_UNCOND(CoorPriorities_Vector.at(k));
+								//NS_LOG_UNCOND("GetPosition: ");
+								NS_LOG_UNCOND (PosUABS->GetPosition());
 
+								//---------------------Turn on UABS TX Power-------------------------------//
+								UABSPhy = UABSLteDevs.Get(i)->GetObject<LteEnbNetDevice>()->GetPhy();
+								UABSPhy->SetTxPower(UABSTxPower);
+
+								//-------------------Set Velocity of UABS to start moving:----------------------//
+								Ptr<ConstantVelocityMobilityModel> VelUABS = UABSNodes.Get(i)->GetObject<ConstantVelocityMobilityModel>();
+								VelUABS->SetVelocity(Vector(speedUABS, 0,0));//speedUABS, 0));
+								//NS_LOG_UNCOND (VelUABS->GetVelocity());	
+							}
+						}	
+					}
 				}
-				UABS_On_Flag = true;
+			//UABS_On_Flag = true;
 			}
-			else if (UABSFlag == false && UABS_On_Flag == false) 
+			else if (UABSFlag == false )//&& UABS_On_Flag == false) 
 			{
 
 				UABSTxPower = 0;
+				speedUABS= 0;
 				for( uint16_t i = 0; i < UABSLteDevs.GetN(); i++) 
 				{
+					//-------------------Turn Off UABS Power-----------------//
 					UABSPhy = UABSLteDevs.Get(i)->GetObject<LteEnbNetDevice>()->GetPhy();
 					UABSPhy->SetTxPower(UABSTxPower);
 					
-				}
-
-			}
-
-			//--------------------Set Position of UABS / or trajectory to go to assist a low SINR Area:--------------------//
-			//If la posicion cambio y el UABS_On_Flag esta True, setea la nueva posicion.
-			//double test =0;
-			for (uint16_t i=0 ; i < UABSLteDevs.GetN(); i++)
-				{
-					UABSCellId = UABSLteDevs.Get(i)->GetObject<LteEnbNetDevice>()->GetCellId();
-					 for (uint16_t k=0 ; k < CoorPriorities_Vector.size(); k++)
-					 {
+					//---------------Set UABS velocity to 0.-------------------//
+					Ptr<ConstantVelocityMobilityModel> VelUABS = UABSNodes.Get(i)->GetObject<ConstantVelocityMobilityModel>();
+					VelUABS->SetVelocity(Vector(speedUABS, 0,0));//speedUABS, 0));
+					//NS_LOG_UNCOND (VelUABS->GetVelocity());
 					
-						//NS_LOG_UNCOND(CoorPriorities_Vector[k+2]);
-						if (UABSCellId == UABSPriority[k] )
-						{
-						 	NS_LOG_UNCOND("Asigna el maldito UABS");
-						 	NS_LOG_UNCOND("UABSCellId:");
-							NS_LOG_UNCOND(UABSCellId);
-							NS_LOG_UNCOND("UABS_Prior_CellID:");
-							NS_LOG_UNCOND(UABSPriority[i]);
-						 }
-				 	}
-
-					}
-			// NS_LOG_UNCOND("CoorPriorities_Vector:");
-			// NS_LOG_UNCOND(CoorPriorities_Vector.size());
-			// NS_LOG_UNCOND(" UABS quantity nodes:");
-			// NS_LOG_UNCOND(UABSNodes.GetN());
-			if (CoorPriorities_Vector.size() <= UABSNodes.GetN())
-			{
-
-
-				
-				for (uint16_t k=0 ; k < CoorPriorities_Vector.size(); k++)
-					{	
-						Ptr<ConstantVelocityMobilityModel> PosUABS = UABSNodes.Get(k)->GetObject<ConstantVelocityMobilityModel>();
-						//PosUABS->SetPosition(Vector(10, 10, 40)); // aqui tengo que poner las coordenadas obtenidas por el algoritmo de clusterizacion.
-						PosUABS->SetPosition(CoorPriorities_Vector.at(k));
-						//NS_LOG_UNCOND("Temp: ");
-						//NS_LOG_UNCOND(CoorPriorities_Vector.at(k));
-						//NS_LOG_UNCOND("GetPosition: ");
-						NS_LOG_UNCOND (PosUABS->GetPosition());
-					}	
-			}
-			else
-			{
-				for (uint16_t k=0 ; k < UABSNodes.GetN(); k++)
-				{	
-					Ptr<ConstantVelocityMobilityModel> PosUABS = UABSNodes.Get(k)->GetObject<ConstantVelocityMobilityModel>();
-					//PosUABS->SetPosition(Vector(10, 10, 40)); // aqui tengo que poner las coordenadas obtenidas por el algoritmo de clusterizacion.
-					PosUABS->SetPosition(CoorPriorities_Vector.at(k));
-					//NS_LOG_UNCOND("Temp: ");
-					//NS_LOG_UNCOND(CoorPriorities_Vector.at(k));
-					//NS_LOG_UNCOND("GetPosition: ");
-					NS_LOG_UNCOND (PosUABS->GetPosition());
-				}	
-			}
-
-
-			//-------------------Set Velocity of UABS to start moving:----------------------//
-			//If  si el UABSFlag esta True, setea la velocidad, de lo contrario si UABS_On_Flag esta True mantenla en 0 (apagado).
-			
-			if (UABSFlag == true && UABS_On_Flag == false) // revisar esta logica
-			{
-				speedUABS=10;
-				if (CoorPriorities_Vector.size() <= UABSNodes.GetN())
-				{
-					for (uint16_t n=0 ; n < CoorPriorities_Vector.size(); n++)
-					{
-						Ptr<ConstantVelocityMobilityModel> VelUABS = UABSNodes.Get(n)->GetObject<ConstantVelocityMobilityModel>();
-						VelUABS->SetVelocity(Vector(speedUABS, 0,0));//speedUABS, 0));
-						//NS_LOG_UNCOND (VelUABS->GetVelocity());
-					}
 				}
-				else
-				{
-					for (uint16_t n=0 ; n < UABSNodes.GetN(); n++)
-					{
-						Ptr<ConstantVelocityMobilityModel> VelUABS = UABSNodes.Get(n)->GetObject<ConstantVelocityMobilityModel>();
-						VelUABS->SetVelocity(Vector(speedUABS, 0,0));//speedUABS, 0));
-						//NS_LOG_UNCOND (VelUABS->GetVelocity());
-					}
-
-				}
-			}
-			else
-			{
-				speedUABS= 0;
-				for (uint16_t n=0 ; n < UABSNodes.GetN(); n++)
-					{
-						Ptr<ConstantVelocityMobilityModel> VelUABS = UABSNodes.Get(n)->GetObject<ConstantVelocityMobilityModel>();
-						VelUABS->SetVelocity(Vector(speedUABS, 0,0));//speedUABS, 0));
-						//NS_LOG_UNCOND (VelUABS->GetVelocity());
-					}
 
 			}
 
 		}
 
-
+		//--------------------Function to execute Python in console--------------//
 		std::string exec(const char* cmd)
 		{
 			std::array<char, 128> buffer;
@@ -475,18 +423,17 @@ int transmissionStart = 0;
 
 		void GetPrioritizedClusters(NodeContainer UABSNodes, double speedUABS, NetDeviceContainer UABSLteDevs)
 		{
-			//std::stringstream cmd;
 			std::vector<std::string> Split_coord_Prior;
-			
-			cmd << "python3 UOS-PythonCode.py " << " 2>/dev/null ";
-			//GetClusterCoordinates =  stod(exec(cmd.str().c_str()));
-			GetClusterCoordinates =  exec(cmd.str().c_str());
-			
 			ns3::Vector3D CoorPriorities;
 			std::vector<ns3::Vector3D>  CoorPriorities_Vector;
 			double UABSPriority[0];
-			
 			int j=0;
+
+			// Call Python code to get string with clusters prioritized and trajectory optimized (Which UABS will serve which cluster).
+			cmd << "python3 UOS-PythonCode.py " << " 2>/dev/null ";
+			GetClusterCoordinates =  exec(cmd.str().c_str());
+			
+
 			if (!GetClusterCoordinates.empty())
 			{
 				UABSFlag = true;
@@ -496,18 +443,9 @@ int transmissionStart = 0;
 				UABSPriority [Split_coord_Prior.size()];
 				for (uint16_t i = 0; i < Split_coord_Prior.size()-2; i+=3)
 				{
-					//NS_LOG_UNCOND(Split_coord_Prior[i]);
-					//NS_LOG_UNCOND(Split_coord_Prior[i] << "," << Split_coord_Prior[i+1]<< "," << Split_coord_Prior[i+2] <<std::endl);
-					UABSPriority [i] = std::stod(Split_coord_Prior[i+2]);
-					NS_LOG_UNCOND("UABS Priority:");
-					NS_LOG_UNCOND(UABSPriority[i]);
-					//CoorPriorities = Vector(std::stod(Split_coord_Prior[i]),std::stod(Split_coord_Prior[i+1]),std::stod(Split_coord_Prior[i+2])); //Vector containing: [X,Y,KnnUABSPrediction]
-					CoorPriorities = Vector(std::stod(Split_coord_Prior[i]),std::stod(Split_coord_Prior[i+1]),UABSHeight); //Old way of passing the coordinates
-					//NS_LOG_UNCOND("Funct GetPrioritizedClusters: ");
-					//NS_LOG_UNCOND(CoorPriorities);
+					UABSPriority [i] = std::stod(Split_coord_Prior[i+2]); //Save priority into a double array.
+					CoorPriorities = Vector(std::stod(Split_coord_Prior[i]),std::stod(Split_coord_Prior[i+1]),UABSHeight); //Vector containing: [X,Y,FixedHeight]
 					CoorPriorities_Vector.push_back(CoorPriorities); 
-					//NS_LOG_UNCOND("Ahi e: ");
-					//NS_LOG_UNCOND(CoorPriorities_Vector.at(j));
 					j++;
 				}
 			}
@@ -527,6 +465,8 @@ int transmissionStart = 0;
 			
 			Simulator::Schedule(Seconds(6), &GetPrioritizedClusters,UABSNodes,  speedUABS,  UABSLteDevs);
 		}
+
+
 
 		void ThroughputCalc(Ptr<FlowMonitor> monitor, Ptr<Ipv4FlowClassifier> classifier,Gnuplot2dDataset datasetThroughput,Gnuplot2dDataset datasetPDR,Gnuplot2dDataset datasetPLR, Gnuplot2dDataset datasetAPD, uint32_t z)
 		{
@@ -1063,19 +1003,6 @@ int transmissionStart = 0;
 		Simulator::Schedule(Seconds(5), &GetPositionUEandenB,ueNodes,enbNodes,UABSNodes,enbLteDevs,UABSLteDevs,ueOverloadNodes);
 		}
 
-		// // //Set Power of UABS, initially 0 to simulate a turned off UABS.
-		// if (scen == 2 || scen == 4)
-		// {
-		// 	// Ptr<LteEnbPhy> UABSPhy;
-	 
-		// 	// for( uint16_t i = 0; i < UABSLteDevs.GetN(); i++) 
-		// 	// {
-		// 	// 	UABSPhy = UABSLteDevs.Get(i)->GetObject<LteEnbNetDevice>()->GetPhy();
-		// 	// 	UABSPhy->SetTxPower(UABSTxPower);
-		// 	// 	// NS_LOG_UNCOND("UABS TX Power: ");
-		// 	// 	// NS_LOG_UNCOND(UABSPhy->GetTxPower());
-		// 	// }
-		// }
 
 		//---------------------- Install the IP stack on the UEs (regular UE and Overloding-UE) ---------------------- //
 		NodeContainer ues_all;
@@ -1145,7 +1072,7 @@ int transmissionStart = 0;
 				Ptr<Node> PosUABS = enbNodes.Get(j)->GetObject<Node>();
 				//Set a X2 interface between UABS and all enBs	
 				lteHelper->AddX2Interface(UABSNodes.Get(i), enbNodes.Get(j));
-				NS_LOG_UNCOND("Creating X2 Interface between UABS " << UABSNodes.Get(i) << " and enB " << enbNodes.Get(j));
+				//NS_LOG_UNCOND("Creating X2 Interface between UABS " << UABSNodes.Get(i) << " and enB " << enbNodes.Get(j));
 			}
 		}
 		}
@@ -1207,19 +1134,25 @@ int transmissionStart = 0;
 		{
 			anim.UpdateNodeDescription(enbNodes.Get(i), "eNb");
 			anim.UpdateNodeColor(enbNodes.Get(i), 0, 255, 0);
-			anim.UpdateNodeSize(i,100,100); // to change the node size in the animation.
+			anim.UpdateNodeSize(i,300,300); // to change the node size in the animation.
 		}
 		for (uint32_t i = 0; i < ueNodes.GetN(); ++i) 
 		{
 			anim.UpdateNodeDescription(ueNodes.Get(i), "UEs");
 			anim.UpdateNodeColor(ueNodes.Get(i),  255, 0, 0);
-			anim.UpdateNodeSize(i,50,50); // to change the node size in the animation.
+			anim.UpdateNodeSize(i,100,100); // to change the node size in the animation.
+		}
+		for (uint32_t i = 0; i < ueOverloadNodes.GetN(); ++i) 
+		{
+			anim.UpdateNodeDescription(ueOverloadNodes.Get(i), "UEs OL");
+			anim.UpdateNodeColor(ueOverloadNodes.Get(i),  255, 0, 0);
+			anim.UpdateNodeSize(i,100,100); // to change the node size in the animation.
 		}
 		for (uint32_t i = 0; i < UABSNodes.GetN(); ++i) 
 		{
 			anim.UpdateNodeDescription(UABSNodes.Get(i), "UABS");
 			anim.UpdateNodeColor(UABSNodes.Get(i), 0, 0, 255);
-			anim.UpdateNodeSize(i,100,100); // to change the node size in the animation.
+			anim.UpdateNodeSize(i,200,200); // to change the node size in the animation.
 		}
 			anim.UpdateNodeDescription(remoteHost, "RH");
 			anim.UpdateNodeColor(remoteHost, 0, 255, 255);
