@@ -105,6 +105,7 @@ int scen = 4;
 // Scen[2]: one enB damaged (off) with supporting UABS; Scen[3]:Overloaded enB(s) with no UABS support; Scen[4]:Overloaded enB(s) with UABS support; ]
 int enBpowerFailure=0;
 int transmissionStart = 0;
+double UABSPriority[20];
 	 
 		NS_LOG_COMPONENT_DEFINE ("UOSLTE");
 
@@ -426,7 +427,8 @@ int transmissionStart = 0;
 			std::vector<std::string> Split_coord_Prior;
 			ns3::Vector3D CoorPriorities;
 			std::vector<ns3::Vector3D>  CoorPriorities_Vector;
-			double UABSPriority[0];
+			
+			
 			int j=0;
 
 			// Call Python code to get string with clusters prioritized and trajectory optimized (Which UABS will serve which cluster).
@@ -441,6 +443,12 @@ int transmissionStart = 0;
 
 				boost::split(Split_coord_Prior, GetClusterCoordinates, boost::is_any_of(" "), boost::token_compress_on);
 				UABSPriority [Split_coord_Prior.size()];
+
+				NS_LOG_UNCOND("UABSPriority dentro");
+				NS_LOG_UNCOND(sizeof(UABSPriority));
+				NS_LOG_UNCOND("Split_coord_Prior dentro");
+				NS_LOG_UNCOND(Split_coord_Prior.size());
+
 				for (uint16_t i = 0; i < Split_coord_Prior.size()-2; i+=3)
 				{
 					UABSPriority [i] = std::stod(Split_coord_Prior[i+2]); //Save priority into a double array.
@@ -527,7 +535,7 @@ int transmissionStart = 0;
 			{
 				evalvidId++;
 				//int startTime = rand() % (int)simTime + 2; // a random number between 2 - simtime (actual 100 segs)
-				int startTime = rand() % 40 + 20;
+				//int startTime = rand() % 40 + 20;
 				//NS_LOG_UNCOND("Node " << i << " requesting video at " << startTime << "\n");
 				uint16_t  port = 8000 * evalvidId + 8000; //to use a different port in every iterac...
 				std::stringstream sdTrace;
