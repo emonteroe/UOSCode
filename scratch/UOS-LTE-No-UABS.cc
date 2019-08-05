@@ -1264,8 +1264,9 @@ int transmissionStart = 0;
 		FlowMonitorHelper flowmon;
 		//Ptr<FlowMonitor> monitor = flowmon.InstallAll();
 		//Prueba 1219: intentar solo capturar el trafico de los nodos y el remotehost
-		Ptr<FlowMonitor> monitor = flowmon.Install(ueNodes);
-		Ptr<FlowMonitor> monitor = flowmon.Install(remoteHost); //remoteHostContainer
+		Ptr<FlowMonitor> monitor;
+		monitor = flowmon.Install(ueNodes);
+		monitor = flowmon.Install(remoteHostContainer); //remoteHostContainer
 		Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowmon.GetClassifier ());
 		
 		NS_LOG_UNCOND("Running simulation...");
