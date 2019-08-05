@@ -100,7 +100,7 @@ double UABSHeight = 40;
 double enBHeight = 30;
 uint32_t nRuns = 1;
 uint32_t randomSeed = 1234;
-int scen = 1; 
+int scen = 4; 
 // [Scenarios --> Scen[0]: General Scenario, with no UABS support, network ok;  Scen[1]: one enB damaged (off) and no UABS;
 // Scen[2]: one enB damaged (off) with supporting UABS; Scen[3]:Overloaded enB(s) with no UABS support; Scen[4]:Overloaded enB(s) with UABS support; ]
 int enBpowerFailure=0;
@@ -537,7 +537,7 @@ int transmissionStart = 0;
 
 			//Video Server
 				EvalvidServerHelper server(port);
-				server.SetAttribute ("SenderTraceFilename", StringValue("evalvid_videos/st_akiyo_cif_h264_300_18")); //Old: src/evalvid/st_highway_cif.st
+				server.SetAttribute ("SenderTraceFilename", StringValue("evalvid_videos/st_highway_600_cif")); //Old: src/evalvid/st_highway_cif.st
 				server.SetAttribute ("SenderDumpFilename", StringValue(sdTrace.str()));
 				server.SetAttribute("PacketPayload", UintegerValue(512));
 				ApplicationContainer apps = server.Install(remoteHost);
@@ -550,7 +550,7 @@ int transmissionStart = 0;
 				apps = client.Install (ueNodes.Get(i));
 			
 			 
-				apps.Start (Seconds (startTime));
+				apps.Start (Seconds (2.0)); //starttime
 				apps.Stop (Seconds (simTime));
 
 				Ptr<Ipv4> ipv4 = ueNodes.Get(i)->GetObject<Ipv4>();
@@ -749,7 +749,7 @@ int transmissionStart = 0;
 			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
 	    	lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
 	    	lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
-	    	Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
+	    	//Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
 		}
 
 		//lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::FriisPropagationLossModel"));
@@ -779,13 +779,13 @@ int transmissionStart = 0;
 		// Create the Internet
 		PointToPointHelper p2ph;
 		p2ph.SetDeviceAttribute ("DataRate", DataRateValue (DataRate ("100Gb/s")));
-		p2ph.SetDeviceAttribute ("Mtu", UintegerValue (1500));
+		p2ph.SetDeviceAttribute ("Mtu", UintegerValue (1400));
 		p2ph.SetChannelAttribute ("Delay", TimeValue (Seconds (0.010)));   //0.010
 		NetDeviceContainer internetDevices = p2ph.Install (pgw, remoteHost);
 
 
 		Ipv4AddressHelper ipv4h;
-		ipv4h.SetBase ("1.0.0.0", "255.0.0.0");
+		ipv4h.SetBase ("10.1.0.0", "255.255.0.0");
 		Ipv4InterfaceContainer internetIpIfaces = ipv4h.Assign (internetDevices);
 		// interface 0 is localhost, 1 is the p2p device
 		Ipv4Address remoteHostAddr = internetIpIfaces.GetAddress (1);
@@ -854,16 +854,16 @@ int transmissionStart = 0;
 		
 		//--------------------Antenna parameters----------------------// 
 		//--------------------Cosine Antenna--------------------------//
-		// lteHelper->SetEnbAntennaModelType("ns3::CosineAntennaModel");  // CosineAntennaModel associated with an eNB device allows to model one sector of a macro base station
-		// lteHelper->SetEnbAntennaModelAttribute("Orientation", DoubleValue(0)); //default is 0
-		// lteHelper->SetEnbAntennaModelAttribute("Beamwidth", DoubleValue(60));
-		// lteHelper->SetEnbAntennaModelAttribute("MaxGain", DoubleValue(0.0)); //default 0
+		lteHelper->SetEnbAntennaModelType("ns3::CosineAntennaModel");  // CosineAntennaModel associated with an eNB device allows to model one sector of a macro base station
+		lteHelper->SetEnbAntennaModelAttribute("Orientation", DoubleValue(0)); //default is 0
+		lteHelper->SetEnbAntennaModelAttribute("Beamwidth", DoubleValue(60));
+		lteHelper->SetEnbAntennaModelAttribute("MaxGain", DoubleValue(0.0)); //default 0
 		//--------------------Parabolic Antenna  -- > to use with multisector cells.
 		// lteHelper->SetEnbAntennaModelType ("ns3::ParabolicAntennaModel");
 		// lteHelper->SetEnbAntennaModelAttribute ("Beamwidth",   DoubleValue (70));
 		// lteHelper->SetEnbAntennaModelAttribute ("MaxAttenuation",     DoubleValue (20.0));
 		//--------------------Isotropic Antenna--------------------------//
-		lteHelper->SetEnbAntennaModelType ("ns3::IsotropicAntennaModel");  //irradiates in all directions
+		// lteHelper->SetEnbAntennaModelType ("ns3::IsotropicAntennaModel");  //irradiates in all directions
 
 		//-------------------Set frequency. This is important because it changes the behavior of the path loss model
    		lteHelper->SetEnbDeviceAttribute("DlEarfcn", UintegerValue(100));
@@ -1262,7 +1262,10 @@ int transmissionStart = 0;
 
 		//Flow Monitor Setup
 		FlowMonitorHelper flowmon;
-		Ptr<FlowMonitor> monitor = flowmon.InstallAll();
+		//Ptr<FlowMonitor> monitor = flowmon.InstallAll();
+		//Prueba 1219: intentar solo capturar el trafico de los nodos y el remotehost
+		Ptr<FlowMonitor> monitor = flowmon.Install(ueNodes);
+		Ptr<FlowMonitor> monitor = flowmon.Install(remoteHost); //remoteHostContainer
 		Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowmon.GetClassifier ());
 		
 		NS_LOG_UNCOND("Running simulation...");
