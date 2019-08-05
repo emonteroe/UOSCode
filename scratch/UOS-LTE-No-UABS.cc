@@ -474,7 +474,7 @@ double UABSPriority[20];
 
 
 
-		void ThroughputCalc(Ptr<FlowMonitor> monitor, Ptr<Ipv4FlowClassifier> classifier,Gnuplot2dDataset datasetThroughput,Gnuplot2dDataset datasetPDR,Gnuplot2dDataset datasetPLR, Gnuplot2dDataset datasetAPD, uint32_t z)
+		void ThroughputCalc(Ptr<FlowMonitor> monitor, Ptr<Ipv4FlowClassifier> classifier,Gnuplot2dDataset datasetThroughput,Gnuplot2dDataset datasetPDR,Gnuplot2dDataset datasetPLR, Gnuplot2dDataset datasetAPD)
 		{
 
 		monitor->CheckForLostPackets ();
@@ -506,11 +506,11 @@ double UABSPriority[20];
 			//std::cout << "  All Delay/Average Packet Delay (APD): " << Delaysum / txPacketsum << "\n"; //APD = Average Packet Delay : to do !
 			std::cout << "  All Lost Packets: " << LostPacketsum << "\n";
 			//std::cout << "  All Drop Packets: " << DropPacketsum << "\n";
-			std::cout<<"Throughput: " << iter->second.rxBytes * 8.0 / (iter->second.timeLastRxPacket.GetSeconds()-iter->second.timeFirstTxPacket.GetSeconds()) /1024  << " Mbps\n";
+			std::cout<<"Throughput: " << iter->second.rxBytes * 8.0 / (iter->second.timeLastRxPacket.GetSeconds()-iter->second.timeFirstTxPacket.GetSeconds()) /1024 /1024 << " Mbps\n";
 			std::cout << "Packets Delivery Ratio: " << ((rxPacketsum * 100) / txPacketsum) << "%" << "\n";
-			std::cout << "Packets Lost Ratio: " << ((LostPacketsum * 100) / txPacketsum) << "%" << "\n";
+			std::cout << "Packets Loss Ratio: " << ((LostPacketsum * 100) / txPacketsum) << "%" << "\n";
 			std::cout << "Average Packet Delay: " << Delaysum / txPacketsum << "\n"; 
-			Throughput=iter->second.rxBytes * 8.0 /(iter->second.timeLastRxPacket.GetSeconds()-iter->second.timeFirstTxPacket.GetSeconds())/ 1024;
+			Throughput=iter->second.rxBytes * 8.0 /(iter->second.timeLastRxPacket.GetSeconds()-iter->second.timeFirstTxPacket.GetSeconds())/ 1024 / 1024;
 			PDR = ((rxPacketsum * 100) / txPacketsum);
 			PLR = ((LostPacketsum * 100) / txPacketsum);
 			APD = (Delaysum / txPacketsum);
@@ -522,7 +522,8 @@ double UABSPriority[20];
 		}
 
 		//monitor->SerializeToXmlFile("UOSLTE-FlowMonitor.xml",true,true);
-		monitor->SerializeToXmlFile("UOSLTE-FlowMonitor_run_"+std::to_string(z)+".xml",true,true);
+		//monitor->SerializeToXmlFile("UOSLTE-FlowMonitor_run_"+std::to_string(z)+".xml",true,true);
+		Simulator::Schedule(Seconds(1),&ThroughputCalc, monitor,classifier,datasetThroughput,datasetPDR,datasetPLR,datasetAPD);
 
 
 		}
@@ -691,8 +692,8 @@ double UABSPriority[20];
 		// MAIN FUNCTION
 		int main (int argc, char *argv[])
 		{
-		// LogComponentEnable ("EvalvidClient", LOG_LEVEL_INFO);
-		// LogComponentEnable ("EvalvidServer", LOG_LEVEL_INFO);
+		//LogComponentEnable ("EvalvidClient", LOG_LEVEL_INFO);
+		//LogComponentEnable ("EvalvidServer", LOG_LEVEL_INFO);
 
 		CommandLine cmm;
     	cmm.AddValue("randomSeed", "value of seed for random", randomSeed);
@@ -722,7 +723,7 @@ double UABSPriority[20];
   		//lteHelper->SetSchedulerAttribute("PssFdSchedulerType", StringValue("CoItA")); // PF scheduler type in PSS
 		
 		// Modo de transmissão (SISO [0], MIMO [1])
-    	Config::SetDefault("ns3::LteEnbRrc::DefaultTransmissionMode",UintegerValue(0));
+    	//Config::SetDefault("ns3::LteEnbRrc::DefaultTransmissionMode",UintegerValue(0));
 
 		Ptr<Node> pgw = epcHelper->GetPgwNode ();
 	  
@@ -749,13 +750,13 @@ double UABSPriority[20];
 		//Pathlossmodel
 		if (scen == 0 || scen == 1 || scen == 3)
 		{
-			// NS_LOG_UNCOND("Pathloss model: Nakagami Propagation ");
-			// lteHelper->SetAttribute("PathlossModel",StringValue("ns3::NakagamiPropagationLossModel"));
+			NS_LOG_UNCOND("Pathloss model: Nakagami Propagation ");
+			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::NakagamiPropagationLossModel"));
 
-			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
-	    	lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
-	    	lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
-	    	//Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
+			// lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
+	  //   	lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
+	  //   	lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
+	  //   	//Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
 		}
 
 		//lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::FriisPropagationLossModel"));
@@ -766,7 +767,7 @@ double UABSPriority[20];
 			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
 	    	lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
 	    	lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
-	    	Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
+	    	//Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
 	    }
 
 		//lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::HybridBuildingsPropagationLossModel"));
@@ -785,7 +786,7 @@ double UABSPriority[20];
 		// Create the Internet
 		PointToPointHelper p2ph;
 		p2ph.SetDeviceAttribute ("DataRate", DataRateValue (DataRate ("100Gb/s")));
-		p2ph.SetDeviceAttribute ("Mtu", UintegerValue (1400));
+		p2ph.SetDeviceAttribute ("Mtu", UintegerValue (1400)); //default 1500
 		p2ph.SetChannelAttribute ("Delay", TimeValue (Seconds (0.010)));   //0.010
 		NetDeviceContainer internetDevices = p2ph.Install (pgw, remoteHost);
 
@@ -894,7 +895,7 @@ double UABSPriority[20];
 									 "Time", StringValue ("1s"),//("1s"),
 									 //"Speed", StringValue ("ns3::ConstantRandomVariable[Constant=4.0]"),
 									 //"Speed", StringValue ("ns3::UniformRandomVariable[Min=2.0|Max=4.0]"),
-									 "Speed", StringValue ("ns3::UniformRandomVariable[Min=2.0|Max=8.0]"),
+									 "Speed", StringValue ("ns3::UniformRandomVariable[Min=1.0|Max=4.0]"),
 									 "Bounds", StringValue ("0|6000|0|6000"));
 		// mobilityUEs.SetPositionAllocator("ns3::RandomRectanglePositionAllocator",
 		// 	 							 "X", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=6000.0]"),
@@ -1086,16 +1087,16 @@ double UABSPriority[20];
 		}
 
 		
-		// activate EPSBEARER
+		// -----------------------Activate EPSBEARER---------------------------//
 		lteHelper->ActivateDedicatedEpsBearer (ueLteDevs, EpsBearer (EpsBearer::NGBR_VIDEO_TCP_DEFAULT), EpcTft::Default ());
 	  
-	  	//get Sinr
+	  	//------------------------Get Sinr-------------------------------------//
 	  	if(scen != 0)
 		{
 		Simulator::Schedule(Seconds(5), &GetSinrUE,ueLteDevs,ueNodes, ueOverloadNodes, OverloadingUeLteDevs);
 		}
 
-		//Run Python Command to get centroids
+		//----------------Run Python Command to get centroids------------------------//
 		if (scen == 2 || scen == 4)
 		{
 			Simulator::Schedule(Seconds(6), &GetPrioritizedClusters, UABSNodes,  speedUABS,  UABSLteDevs);
@@ -1122,12 +1123,42 @@ double UABSPriority[20];
 		NS_LOG_UNCOND("Resquesting-sending Video...");
 	  	NS_LOG_INFO ("Create Applications.");
 	   
-	  	requestVideoStream(remoteHost, ueNodes, remoteHostAddr, simTime);//, transmissionStart);
+	  	//requestVideoStream(remoteHost, ueNodes, remoteHostAddr, simTime);//, transmissionStart);
+	  	for (uint16_t i = 0; i < ueNodes.GetN(); i++) 
+		{
+			evalvidId++;
+			uint16_t  port = 8000 * evalvidId + 8000; //to use a different port in every iterac...
+
+
+		//Video Server
+			EvalvidServerHelper server(port);
+			server.SetAttribute ("SenderTraceFilename", StringValue("src/evalvid/st_highway_cif.st"));
+			server.SetAttribute ("SenderDumpFilename", StringValue("src/evalvid/sd_a01_lte"));
+			ApplicationContainer apps = server.Install(remoteHost);//Container.Get(0)); //verificar esto
+			apps.Start (Seconds (9.0));
+			apps.Stop (Seconds (simTime));
+
+		// Clients
+			EvalvidClientHelper client (internetIpIfaces.GetAddress (1),port);
+	  
+			stringstream s;
+			s << "rd_a" << i << "_lte";
+
+			client.SetAttribute ("ReceiverDumpFilename", StringValue(s.str()));
+			apps = client.Install (ueNodes.Get(i));
+		
+		 
+		
+			apps.Start (Seconds (10.0));
+			apps.Stop (Seconds (simTime));
+
+			Ptr<Ipv4> ipv4 = ueNodes.Get(i)->GetObject<Ipv4>();
+	  	}
 
 	  	if (scen == 3 || scen == 4)
 		{	
 	
-			Simulator::Schedule(Seconds(11),&requestVideoStream, remoteHost, ueOverloadNodes, remoteHostAddr, simTime); //estaba en 11 segundos
+			//Simulator::Schedule(Seconds(11),&requestVideoStream, remoteHost, ueOverloadNodes, remoteHostAddr, simTime); //estaba en 11 segundos
 			
 		}
 
@@ -1268,21 +1299,26 @@ double UABSPriority[20];
 
 		//Flow Monitor Setup
 		FlowMonitorHelper flowmon;
-		//Ptr<FlowMonitor> monitor = flowmon.InstallAll();
+		Ptr<FlowMonitor> monitor = flowmon.InstallAll();
+
 		//Prueba 1219: intentar solo capturar el trafico de los nodos y el remotehost
-		Ptr<FlowMonitor> monitor;
-		monitor = flowmon.Install(ueNodes);
-		monitor = flowmon.Install(remoteHostContainer); //remoteHostContainer
+		// Ptr<FlowMonitor> monitor;
+		// monitor = flowmon.Install(ueNodes);
+		// monitor = flowmon.Install(remoteHostContainer); //remoteHostContainer
+		// monitor = flowmon.Install(enbNodes);
+
 		Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowmon.GetClassifier ());
+		Simulator::Schedule(Seconds(3),&ThroughputCalc, monitor,classifier,datasetThroughput,datasetPDR,datasetPLR,datasetAPD);
 		
 		NS_LOG_UNCOND("Running simulation...");
 		NS_LOG_INFO ("Run Simulation.");
 		Simulator::Stop(Seconds(simTime));
+
 		Simulator::Run ();
 
 		// Print per flow statistics
-		ThroughputCalc(monitor,classifier,datasetThroughput,datasetPDR,datasetPLR,datasetAPD,z);
-		//monitor->SerializeToXmlFile("UOSLTE-FlowMonitor_run_"+std::to_string(z)+".xml",true,true);
+		ThroughputCalc(monitor,classifier,datasetThroughput,datasetPDR,datasetPLR,datasetAPD);
+		monitor->SerializeToXmlFile("UOSLTE-FlowMonitor_run_"+std::to_string(z)+".xml",true,true);
 
 		//Gnuplot ...continued
  		//Throughput
