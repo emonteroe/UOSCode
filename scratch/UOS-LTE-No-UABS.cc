@@ -331,10 +331,10 @@ double UABSPriority[20];
 							if (UABSPriority[k] == UABSCellId)
 							{
 								//--------------------Set Position of UABS / or trajectory to go to assist a low SINR Area:--------------------//
-								NS_LOG_UNCOND("UABSCellId:");
-								NS_LOG_UNCOND(UABSCellId);
-								NS_LOG_UNCOND("UABS_Prior_CellID:");
-								NS_LOG_UNCOND(UABSPriority[k]);
+								// NS_LOG_UNCOND("UABSCellId:");
+								// NS_LOG_UNCOND(UABSCellId);
+								// NS_LOG_UNCOND("UABS_Prior_CellID:");
+								// NS_LOG_UNCOND(UABSPriority[k]);
 								Ptr<ConstantVelocityMobilityModel> PosUABS = UABSNodes.Get(i)->GetObject<ConstantVelocityMobilityModel>();
 								PosUABS->SetPosition(CoorPriorities_Vector.at(k));
 								NS_LOG_UNCOND (PosUABS->GetPosition());
@@ -427,8 +427,6 @@ double UABSPriority[20];
 			std::vector<std::string> Split_coord_Prior;
 			ns3::Vector3D CoorPriorities;
 			std::vector<ns3::Vector3D>  CoorPriorities_Vector;
-			
-			
 			int j=0;
 
 			// Call Python code to get string with clusters prioritized and trajectory optimized (Which UABS will serve which cluster).
@@ -444,10 +442,10 @@ double UABSPriority[20];
 				boost::split(Split_coord_Prior, GetClusterCoordinates, boost::is_any_of(" "), boost::token_compress_on);
 				UABSPriority [Split_coord_Prior.size()];
 
-				NS_LOG_UNCOND("UABSPriority dentro");
-				NS_LOG_UNCOND(sizeof(UABSPriority));
-				NS_LOG_UNCOND("Split_coord_Prior dentro");
-				NS_LOG_UNCOND(Split_coord_Prior.size());
+				// NS_LOG_UNCOND("UABSPriority dentro");
+				// NS_LOG_UNCOND(sizeof(UABSPriority));
+				// NS_LOG_UNCOND("Split_coord_Prior dentro");
+				// NS_LOG_UNCOND(Split_coord_Prior.size());
 
 				for (uint16_t i = 0; i < Split_coord_Prior.size()-2; i+=3)
 				{
