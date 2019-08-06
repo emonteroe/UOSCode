@@ -523,7 +523,7 @@ double UABSPriority[20];
 
 		//monitor->SerializeToXmlFile("UOSLTE-FlowMonitor.xml",true,true);
 		//monitor->SerializeToXmlFile("UOSLTE-FlowMonitor_run_"+std::to_string(z)+".xml",true,true);
-		Simulator::Schedule(Seconds(1),&ThroughputCalc, monitor,classifier,datasetThroughput,datasetPDR,datasetPLR,datasetAPD);
+		//Simulator::Schedule(Seconds(1),&ThroughputCalc, monitor,classifier,datasetThroughput,datasetPDR,datasetPLR,datasetAPD);
 
 
 		}
@@ -763,10 +763,15 @@ double UABSPriority[20];
 		
 		if (scen == 2 || scen == 4)
 		{	
-			NS_LOG_UNCOND("Pathloss model: OkumuraHata ");
-			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
-	    	lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
-	    	lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
+			
+			NS_LOG_UNCOND("Pathloss model: Nakagami Propagation ");
+			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::NakagamiPropagationLossModel"));
+
+
+			// NS_LOG_UNCOND("Pathloss model: OkumuraHata ");
+			// lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
+	  //   	lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
+	  //   	lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
 	    	//Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
 	    }
 
@@ -1299,12 +1304,12 @@ double UABSPriority[20];
 
 		//Flow Monitor Setup
 		FlowMonitorHelper flowmon;
-		Ptr<FlowMonitor> monitor = flowmon.InstallAll();
+		//Ptr<FlowMonitor> monitor = flowmon.InstallAll();
 
 		//Prueba 1219: intentar solo capturar el trafico de los nodos y el remotehost
-		// Ptr<FlowMonitor> monitor;
-		// monitor = flowmon.Install(ueNodes);
-		// monitor = flowmon.Install(remoteHostContainer); //remoteHostContainer
+		 Ptr<FlowMonitor> monitor;
+		 monitor = flowmon.Install(ueNodes);
+		 monitor = flowmon.Install(remoteHostContainer); //remoteHostContainer
 		// monitor = flowmon.Install(enbNodes);
 
 		Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowmon.GetClassifier ());
