@@ -16,6 +16,23 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * Author: Emanuel Montero Espaillat <emanuel.montero.e@gmail.com>
+
+
+/*
+
+    LTE UABS Offloading Scheme
+    Configuration:
+        No.of Cells     : 6
+        Cell Radius     : -
+        No.Of users     : 70 moving user 
+        User Speed      : 1 - 4 m/s
+        Fading Model    :
+        Path Loss Model :
+        eNodeB Configuration:
+            Tx Power        : 46dBm
+        UE Configuration :
+            AMC Selection Scheme    : ?
+*/
  */
 
 #include <fstream>
