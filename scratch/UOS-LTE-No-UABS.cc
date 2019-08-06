@@ -1128,38 +1128,8 @@ double UABSPriority[20];
 		NS_LOG_UNCOND("Resquesting-sending Video...");
 	  	NS_LOG_INFO ("Create Applications.");
 	   
-	  	//requestVideoStream(remoteHost, ueNodes, remoteHostAddr, simTime);//, transmissionStart);
-	  	for (uint16_t i = 0; i < ueNodes.GetN(); i++) 
-		{
-			evalvidId++;
-			uint16_t  port = 8000 * evalvidId + 8000; //to use a different port in every iterac...
-
-
-		//Video Server
-			EvalvidServerHelper server(port);
-			server.SetAttribute ("SenderTraceFilename", StringValue("src/evalvid/st_highway_cif.st"));
-			server.SetAttribute ("SenderDumpFilename", StringValue("src/evalvid/sd_a01_lte"));
-			ApplicationContainer apps = server.Install(remoteHost);//Container.Get(0)); //verificar esto
-			apps.Start (Seconds (9.0));
-			apps.Stop (Seconds (simTime));
-
-		// Clients
-			EvalvidClientHelper client (internetIpIfaces.GetAddress (1),port);
-	  
-			stringstream s;
-			s << "rd_a" << i << "_lte";
-
-			client.SetAttribute ("ReceiverDumpFilename", StringValue(s.str()));
-			apps = client.Install (ueNodes.Get(i));
-		
-		 
-		
-			apps.Start (Seconds (10.0));
-			apps.Stop (Seconds (simTime));
-
-			Ptr<Ipv4> ipv4 = ueNodes.Get(i)->GetObject<Ipv4>();
-	  	}
-
+	  	requestVideoStream(remoteHost, ueNodes, remoteHostAddr, simTime);//, transmissionStart);
+	  	
 	  	if (scen == 3 || scen == 4)
 		{	
 	
