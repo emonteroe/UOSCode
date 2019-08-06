@@ -105,7 +105,8 @@ int scen = 4;
 // Scen[2]: one enB damaged (off) with supporting UABS; Scen[3]:Overloaded enB(s) with no UABS support; Scen[4]:Overloaded enB(s) with UABS support; ]
 int enBpowerFailure=0;
 int transmissionStart = 0;
-double UABSPriority[20];
+//double UABSPriority[20];
+bool graphType = false; // If "true" generates all the graphs based in FlowsVSThroughput, if "else" generates all the graphs based in TimeVSThroughput
 	 
 		NS_LOG_COMPONENT_DEFINE ("UOSLTE");
 
@@ -428,6 +429,7 @@ double UABSPriority[20];
 			ns3::Vector3D CoorPriorities;
 			std::vector<ns3::Vector3D>  CoorPriorities_Vector;
 			int j=0;
+			double UABSPriority[20];
 
 			// Call Python code to get string with clusters prioritized and trajectory optimized (Which UABS will serve which cluster).
 			cmd << "python3 UOS-PythonCode.py " << " 2>/dev/null ";
@@ -485,13 +487,6 @@ double UABSPriority[20];
 		{
 			Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow (iter->first);
 
-			//if ((t.sourceAddress == Ipv4Address("10.1.1.1") && t.destinationAddress == Ipv4Address("10.1.1.2"))
-			// || (t.sourceAddress == Ipv4Address("10.1.1.3") && t.destinationAddress == Ipv4Address("10.1.1.2")))
-			// {
-			 /* NS_LOG_UNCOND("Flow ID: " << iter->first << " Src Addr " << t.sourceAddress << " Dst Addr " << t.destinationAddress);
-			  NS_LOG_UNCOND("Tx Packets = " << iter->second.txPackets);
-			  NS_LOG_UNCOND("Rx Packets = " << iter->second.rxPackets);
-			  NS_LOG_UNCOND("Throughput: " << iter->second.rxBytes * 8.0 / (iter->second.timeLastRxPacket.GetSeconds()-iter->second.timeFirstTxPacket.GetSeconds()) / 1024  << " Kbps");*/
 			txPacketsum += iter->second.txPackets;
 			rxPacketsum += iter->second.rxPackets;
 			LostPacketsum = txPacketsum-rxPacketsum;
@@ -501,29 +496,39 @@ double UABSPriority[20];
 			std::cout<<"Flow ID: " << iter->first << " Src Addr " << t.sourceAddress << " Dst Addr " << t.destinationAddress<<"\n";
 			std::cout<<"Tx Packets = " << iter->second.txPackets<<"\n";
 			std::cout<<"Rx Packets = " << iter->second.rxPackets<<"\n";
-			std::cout << "  All Tx Packets: " << txPacketsum << "\n";
-			std::cout << "  All Rx Packets: " << rxPacketsum << "\n";
+			//std::cout << "  All Tx Packets: " << txPacketsum << "\n";
+			//std::cout << "  All Rx Packets: " << rxPacketsum << "\n";
 			//std::cout << "  All Delay/Average Packet Delay (APD): " << Delaysum / txPacketsum << "\n"; //APD = Average Packet Delay : to do !
-			std::cout << "  All Lost Packets: " << LostPacketsum << "\n";
+			//std::cout << "  All Lost Packets: " << LostPacketsum << "\n";
 			//std::cout << "  All Drop Packets: " << DropPacketsum << "\n";
-			std::cout<<"Throughput: " << iter->second.rxBytes * 8.0 / (iter->second.timeLastRxPacket.GetSeconds()-iter->second.timeFirstTxPacket.GetSeconds()) /1024 /1024 << " Mbps\n";
+			std::cout<<"Throughput: " << iter->second.rxBytes * 8.0 / (iter->second.timeLastRxPacket.GetSeconds()-iter->second.timeFirstTxPacket.GetSeconds()) /1024 << " Kbps\n";///1024 << " Mbps\n";
 			std::cout << "Packets Delivery Ratio: " << ((rxPacketsum * 100) / txPacketsum) << "%" << "\n";
 			std::cout << "Packets Loss Ratio: " << ((LostPacketsum * 100) / txPacketsum) << "%" << "\n";
 			std::cout << "Average Packet Delay: " << Delaysum / txPacketsum << "\n"; 
-			Throughput=iter->second.rxBytes * 8.0 /(iter->second.timeLastRxPacket.GetSeconds()-iter->second.timeFirstTxPacket.GetSeconds())/ 1024 / 1024;
+			
+			Throughput = iter->second.rxBytes * 8.0 /(iter->second.timeLastRxPacket.GetSeconds()-iter->second.timeFirstTxPacket.GetSeconds())/ 1024;// / 1024;
 			PDR = ((rxPacketsum * 100) / txPacketsum);
 			PLR = ((LostPacketsum * 100) / txPacketsum);
 			APD = (Delaysum / txPacketsum);
+			
+			// Save in datasets to later plot the results.
+			if (graphType == true){
 			datasetThroughput.Add((double)iter->first,(double) Throughput);
 			datasetPDR.Add((double)iter->first,(double) PDR);
 			datasetPLR.Add((double)iter->first,(double) PLR);
-			datasetAPD.Add((double)iter->first,(double) APD);
+			datasetAPD.Add((double)iter->first,(double) APD);}
+			else{
+			datasetThroughput.Add((double)Simulator::Now().GetSeconds(),(double) Throughput);
+			datasetPDR.Add((double)Simulator::Now().GetSeconds(),(double) PDR);
+			datasetPLR.Add((double)Simulator::Now().GetSeconds(),(double) PLR);
+			datasetAPD.Add((double)Simulator::Now().GetSeconds(),(double) APD);}
+
 			//}
 		}
 
 		//monitor->SerializeToXmlFile("UOSLTE-FlowMonitor.xml",true,true);
 		//monitor->SerializeToXmlFile("UOSLTE-FlowMonitor_run_"+std::to_string(z)+".xml",true,true);
-		//Simulator::Schedule(Seconds(1),&ThroughputCalc, monitor,classifier,datasetThroughput,datasetPDR,datasetPLR,datasetAPD);
+		Simulator::Schedule(Seconds(1),&ThroughputCalc, monitor,classifier,datasetThroughput,datasetPDR,datasetPLR,datasetAPD);
 
 
 		}
@@ -699,6 +704,7 @@ double UABSPriority[20];
     	cmm.AddValue("randomSeed", "value of seed for random", randomSeed);
     	cmm.AddValue("scen", "scenario to run", scen);
     	cmm.AddValue("nRuns", "Number of runs", nRuns);
+    	cmm.AddValue("graphType","Type of graphs", graphType); 
     	//cmm.AddValue("numberOfUABS", "Number of UABS", numberOfUABS);
     	//cmm.AddValue("numberOfeNodeBNodes", "Number of enBs", numberOfeNodeBNodes);
     	cmm.Parse(argc, argv);
@@ -723,7 +729,7 @@ double UABSPriority[20];
   		//lteHelper->SetSchedulerAttribute("PssFdSchedulerType", StringValue("CoItA")); // PF scheduler type in PSS
 		
 		// Modo de transmissão (SISO [0], MIMO [1])
-    	//Config::SetDefault("ns3::LteEnbRrc::DefaultTransmissionMode",UintegerValue(0));
+    	Config::SetDefault("ns3::LteEnbRrc::DefaultTransmissionMode",UintegerValue(0));
 
 		Ptr<Node> pgw = epcHelper->GetPgwNode ();
 	  
@@ -764,14 +770,14 @@ double UABSPriority[20];
 		if (scen == 2 || scen == 4)
 		{	
 			
-			NS_LOG_UNCOND("Pathloss model: Nakagami Propagation ");
-			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::NakagamiPropagationLossModel"));
+			// NS_LOG_UNCOND("Pathloss model: Nakagami Propagation ");
+			// lteHelper->SetAttribute("PathlossModel",StringValue("ns3::NakagamiPropagationLossModel"));
 
 
-			// NS_LOG_UNCOND("Pathloss model: OkumuraHata ");
-			// lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
-	  //   	lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
-	  //   	lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
+			NS_LOG_UNCOND("Pathloss model: OkumuraHata ");
+			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
+	    	lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
+	    	//lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
 	    	//Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
 	    }
 
@@ -866,16 +872,16 @@ double UABSPriority[20];
 		
 		//--------------------Antenna parameters----------------------// 
 		//--------------------Cosine Antenna--------------------------//
-		lteHelper->SetEnbAntennaModelType("ns3::CosineAntennaModel");  // CosineAntennaModel associated with an eNB device allows to model one sector of a macro base station
-		lteHelper->SetEnbAntennaModelAttribute("Orientation", DoubleValue(0)); //default is 0
-		lteHelper->SetEnbAntennaModelAttribute("Beamwidth", DoubleValue(60));
-		lteHelper->SetEnbAntennaModelAttribute("MaxGain", DoubleValue(0.0)); //default 0
+		// lteHelper->SetEnbAntennaModelType("ns3::CosineAntennaModel");  // CosineAntennaModel associated with an eNB device allows to model one sector of a macro base station
+		// lteHelper->SetEnbAntennaModelAttribute("Orientation", DoubleValue(0)); //default is 0
+		// lteHelper->SetEnbAntennaModelAttribute("Beamwidth", DoubleValue(60));
+		// lteHelper->SetEnbAntennaModelAttribute("MaxGain", DoubleValue(0.0)); //default 0
 		//--------------------Parabolic Antenna  -- > to use with multisector cells.
 		// lteHelper->SetEnbAntennaModelType ("ns3::ParabolicAntennaModel");
 		// lteHelper->SetEnbAntennaModelAttribute ("Beamwidth",   DoubleValue (70));
 		// lteHelper->SetEnbAntennaModelAttribute ("MaxAttenuation",     DoubleValue (20.0));
 		//--------------------Isotropic Antenna--------------------------//
-		// lteHelper->SetEnbAntennaModelType ("ns3::IsotropicAntennaModel");  //irradiates in all directions
+		lteHelper->SetEnbAntennaModelType ("ns3::IsotropicAntennaModel");  //irradiates in all directions
 
 		//-------------------Set frequency. This is important because it changes the behavior of the path loss model
    		lteHelper->SetEnbDeviceAttribute("DlEarfcn", UintegerValue(100));
@@ -1198,10 +1204,10 @@ double UABSPriority[20];
 
 
 		//Gnuplot parameters for Throughput
-		string fileNameWithNoExtension = "FlowVSThroughput_run_";
+		string fileNameWithNoExtension = "Throughput_run_";
 		string graphicsFileName        = fileNameWithNoExtension + std::to_string(z) +".png";
 		string plotFileName            = fileNameWithNoExtension + std::to_string(z)+".plt";
-		string plotTitle               = "Flow vs Throughput";
+		string plotTitle               = "Throughput vs Time";
 		string dataTitle               = "Throughput";
 		//Gnuplot parameters for PDR
 		string fileNameWithNoExtensionPDR = "PDR_run_";
@@ -1249,13 +1255,13 @@ double UABSPriority[20];
 
 		// Set the labels for each axis.
 		//Throughput
-		gnuplot.SetLegend ("Flow", "Throughput");
+		gnuplot.SetLegend ("Time (Seconds)", "Throughput");
 		//PDR
-		gnuplotPDR.SetLegend ("Flow", "Packet Delivery Ratio (%)");
+		gnuplotPDR.SetLegend ("Time (Seconds)", "Packet Delivery Ratio (%)");
 		//PLR
-		gnuplotPLR.SetLegend ("Flow", "Packet Lost Ratio (%)");
+		gnuplotPLR.SetLegend ("Time (Seconds)", "Packet Lost Ratio (%)");
 		//APD
-		gnuplotAPD.SetLegend ("Flow", "Average Packet Delay (%)");
+		gnuplotAPD.SetLegend ("Time (Seconds)", "Average Packet Delay (%)");
 
 		Gnuplot2dDataset datasetThroughput;
 		Gnuplot2dDataset datasetPDR;
