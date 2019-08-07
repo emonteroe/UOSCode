@@ -468,7 +468,7 @@ bool graphType = false; // If "true" generates all the graphs based in FlowsVSTh
 
 				for (uint16_t i = 0; i < Split_coord_Prior.size()-2; i+=3)
 				{
-					UABSPriority [i] = std::stod(Split_coord_Prior[i+2]); //Save priority into a double array.
+					UABSPriority [j] = std::stod(Split_coord_Prior[i+2]); //Save priority into a double array.
 					CoorPriorities = Vector(std::stod(Split_coord_Prior[i]),std::stod(Split_coord_Prior[i+1]),UABSHeight); //Vector containing: [X,Y,FixedHeight]
 					CoorPriorities_Vector.push_back(CoorPriorities); 
 					j++;
