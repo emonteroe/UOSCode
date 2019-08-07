@@ -55,10 +55,10 @@ for i in range(8):
     ThroughputMean[i] = (Throughputarr[i]/countarr[i])
 
 # Mean UABS scenario
-countarr1 = [None] * 3 #debe ser 33 o 30 o 20 o el # de runs
-Throughputarr1 = [None] * 3 #debe ser 33 o 30 o 20 o el # de runs
-ThroughputMean1 = [None] * 3 #debe ser 33 o 30 o 20 o el # de runs
-for i in range(3):
+countarr1 = [None] * 9 #debe ser 33 o 30 o 20 o el # de runs
+Throughputarr1 = [None] * 9 #debe ser 33 o 30 o 20 o el # de runs
+ThroughputMean1 = [None] * 9 #debe ser 33 o 30 o 20 o el # de runs
+for i in range(9):
     count1=0
     sumplr1=0
     for j in range(len(Run1)):
