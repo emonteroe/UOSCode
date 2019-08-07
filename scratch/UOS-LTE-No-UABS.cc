@@ -18,7 +18,7 @@
  * Author: Emanuel Montero Espaillat <emanuel.montero.e@gmail.com>
 
 
-/*
+
 
     LTE UABS Offloading Scheme
     Configuration:
@@ -33,7 +33,7 @@
         UE Configuration :
             AMC Selection Scheme    : ?
 */
- */
+ 
 
 #include <fstream>
 #include <string.h>
@@ -79,7 +79,7 @@
 using namespace ns3;
 
 const uint16_t numberOfeNodeBNodes = 4;
-const uint16_t numberOfUENodes = 70; //Number of user to test: 245, 392, 490 (The number of users and their traffic model follow the parameters recommended by the 3GPP)
+const uint16_t numberOfUENodes = 100; //Number of user to test: 245, 392, 490 (The number of users and their traffic model follow the parameters recommended by the 3GPP)
 const uint16_t numberOfOverloadUENodes = 0; // user that will be connected to an specific enB. 
 const uint16_t numberOfUABS = 6;
 double simTime = 120; // 120 secs ||100 secs || 300 secs
@@ -538,7 +538,8 @@ bool graphType = false; // If "true" generates all the graphs based in FlowsVSTh
 			datasetThroughput.Add((double)Simulator::Now().GetSeconds(),(double) Throughput);
 			datasetPDR.Add((double)Simulator::Now().GetSeconds(),(double) PDR);
 			datasetPLR.Add((double)Simulator::Now().GetSeconds(),(double) PLR);
-			datasetAPD.Add((double)Simulator::Now().GetSeconds(),(double) APD);}
+			datasetAPD.Add((double)Simulator::Now().GetSeconds(),(double) APD);
+			}
 
 			//}
 		}
@@ -1306,7 +1307,7 @@ bool graphType = false; // If "true" generates all the graphs based in FlowsVSTh
 		// monitor = flowmon.Install(enbNodes);
 
 		Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowmon.GetClassifier ());
-		Simulator::Schedule(Seconds(3),&ThroughputCalc, monitor,classifier,datasetThroughput,datasetPDR,datasetPLR,datasetAPD);
+		Simulator::Schedule(Seconds(1),&ThroughputCalc, monitor,classifier,datasetThroughput,datasetPDR,datasetPLR,datasetAPD);
 		
 		NS_LOG_UNCOND("Running simulation...");
 		NS_LOG_INFO ("Run Simulation.");
