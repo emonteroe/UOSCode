@@ -461,14 +461,9 @@ bool graphType = false; // If "true" generates all the graphs based in FlowsVSTh
 				boost::split(Split_coord_Prior, GetClusterCoordinates, boost::is_any_of(" "), boost::token_compress_on);
 				UABSPriority [Split_coord_Prior.size()];
 
-				// NS_LOG_UNCOND("UABSPriority dentro");
-				// NS_LOG_UNCOND(sizeof(UABSPriority));
-				// NS_LOG_UNCOND("Split_coord_Prior dentro");
-				// NS_LOG_UNCOND(Split_coord_Prior.size());
-
 				for (uint16_t i = 0; i < Split_coord_Prior.size()-2; i+=3)
 				{
-					UABSPriority [j] = std::stod(Split_coord_Prior[i+2]); //Save priority into a double array.
+					UABSPriority [j] = std::stod(Split_coord_Prior[i+2]); //Save priority into a double array. // cambie UABSPriority [i] por UABSPriority [j] porque i incrementa de 3 en 3. 
 					CoorPriorities = Vector(std::stod(Split_coord_Prior[i]),std::stod(Split_coord_Prior[i+1]),UABSHeight); //Vector containing: [X,Y,FixedHeight]
 					CoorPriorities_Vector.push_back(CoorPriorities); 
 					j++;
