@@ -40,10 +40,10 @@ Run1,time1,Throughput1 = data2.T
 
 
 # Mean general scenario
-countarr = [None] * 8 #debe ser 33 o 30 o 20 o el # de runs
-Throughputarr = [None] * 8  #debe ser 33 o 30 o 20 o el # de runs
-ThroughputMean = [None] * 8 #debe ser 33 o 30 o 20 o el # de runs
-for i in range(8):
+countarr = [None] * 25 #debe ser 33 o 30 o 20 o el # de runs
+Throughputarr = [None] * 25  #debe ser 33 o 30 o 20 o el # de runs
+ThroughputMean = [None] * 25 #debe ser 33 o 30 o 20 o el # de runs
+for i in range(25):
     count=0
     sumplr=0
     for j in range(len(Run)):
@@ -55,10 +55,10 @@ for i in range(8):
     ThroughputMean[i] = (Throughputarr[i]/countarr[i])
 
 # Mean UABS scenario
-countarr1 = [None] * 9 #debe ser 33 o 30 o 20 o el # de runs
-Throughputarr1 = [None] * 9 #debe ser 33 o 30 o 20 o el # de runs
-ThroughputMean1 = [None] * 9 #debe ser 33 o 30 o 20 o el # de runs
-for i in range(9):
+countarr1 = [None] * 25 #debe ser 33 o 30 o 20 o el # de runs
+Throughputarr1 = [None] * 25 #debe ser 33 o 30 o 20 o el # de runs
+ThroughputMean1 = [None] * 25 #debe ser 33 o 30 o 20 o el # de runs
+for i in range(25):
     count1=0
     sumplr1=0
     for j in range(len(Run1)):
@@ -68,14 +68,25 @@ for i in range(9):
             sumplr1+= Throughput1[j]
             Throughputarr1[i] = sumplr1
     ThroughputMean1[i] = (Throughputarr1[i]/countarr1[i])
-    
+
+colors  = ["#b3ffd6","#809c8c" ]
+patterns = ['\/\/','\/']
+plt.style.use("classic")      
 plt.figure()
 #tight_layout()    
 plt.grid()    
-plt.xticks([0,1],('General','UABS'))#, plt.yticks([5,10,15,20,25])
+plt.xticks([0,1],('LTE','LTE + UOS'))#, plt.yticks([5,10,15,20,25])
+plt.yticks(fontsize=14)
 plt.xlabel('Scenarios')
-plt.ylabel('PLR (%)')    
-plt.bar(np.arange(2),[np.mean(ThroughputMean),np.mean(ThroughputMean1)], yerr=[mean_confidence_interval(ThroughputMean),mean_confidence_interval(ThroughputMean1)])
+plt.ylabel('PLR (%)') 
+plt.xlim(-0.5,1.5)   
+bars = plt.bar(np.arange(2),[np.mean(ThroughputMean),np.mean(ThroughputMean1)], yerr=[mean_confidence_interval(ThroughputMean),mean_confidence_interval(ThroughputMean1)], width =0.45)
+for color, bar,pattern in zip(colors, bars,patterns):
+        bar.set_facecolor(color)
+        bar.set_hatch(pattern)
+        bar.set_edgecolor("black")
+        bar.set_linewidth(1)
+plt.savefig("Graph_Avg_PLR.pdf", format='pdf', dpi=1000)
 plt.show()
 
 #test= statistics.mean(Throughput)

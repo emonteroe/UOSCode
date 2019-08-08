@@ -18,7 +18,7 @@
 #      REVISION:  ---
 #===============================================================================
 
-for i in {0..3..1}
+for i in {9..9..1}
 do
 	cat "Throughput_run_$i.plt" >> meanThroughput
 done

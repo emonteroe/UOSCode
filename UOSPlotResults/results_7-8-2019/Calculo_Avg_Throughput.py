@@ -30,7 +30,7 @@ with open('meanThroughput_Sum') as MeanThroughput:
 
     data1 = np.array(list((int(Run),int(time), float(Throughput)) for Run, time, Throughput in csv.reader(MeanThroughput, delimiter= ',')))
 
-with open('meanThroughput_UABS_Sum') as MeanThroughputUABS:
+with open('meanThroughput_UABS_Sum.csv') as MeanThroughputUABS:
 
     data2 = np.array(list((int(Run1),int(time1), float(Throughput1)) for Run1, time1, Throughput1 in csv.reader(MeanThroughputUABS, delimiter= ',')))    
 
@@ -38,45 +38,58 @@ with open('meanThroughput_UABS_Sum') as MeanThroughputUABS:
 Run,time,Throughput = data1.T
 Run1,time1,Throughput1 = data2.T
 
-
+NUsers=100
 
 # Mean general scenario
-countarr = [None] * 8 #debe ser 33 o 30 o 20 o el # de runs
-Throughputarr = [None] * 8  #debe ser 33 o 30 o 20 o el # de runs
-ThroughputMean = [None] * 8 #debe ser 33 o 30 o 20 o el # de runs
-for i in range(8):
+countarr = [None] * 30 #debe ser 33 o 30 o 20 o el # de runs
+Throughputarr = [None] * 30  #debe ser 33 o 30 o 20 o el # de runs
+ThroughputMean = [None] * 30 #debe ser 33 o 30 o 20 o el # de runs
+for i in range(30):
     count=0
     sumplr=0
     for j in range(len(Run)):
         if (Run[j]==i):
             count+=1
             countarr[i]=count
-            sumplr+= Throughput[j]
+            sumplr+= (Throughput[j] / NUsers)  #dividir entre cantidad de usuarios
             Throughputarr[i] = sumplr
     ThroughputMean[i] = (Throughputarr[i]/countarr[i])
 
 # Mean UABS scenario
-countarr1 = [None] * 9 #debe ser 33 o 30 o 20 o el # de runs
-Throughputarr1 = [None] * 9 #debe ser 33 o 30 o 20 o el # de runs
-ThroughputMean1 = [None] * 9 #debe ser 33 o 30 o 20 o el # de runs
-for i in range(9):
+countarr1 = [None] * 30 #debe ser 33 o 30 o 20 o el # de runs
+Throughputarr1 = [None] * 30 #debe ser 33 o 30 o 20 o el # de runs
+ThroughputMean1 = [None] * 30 #debe ser 33 o 30 o 20 o el # de runs
+
+for i in range(30):
     count1=0
     sumplr1=0
     for j in range(len(Run1)):
         if (Run1[j]==i):
             count1+=1
             countarr1[i]=count1
-            sumplr1+= Throughput1[j]
+            sumplr1+= (Throughput1[j] / NUsers) #dividir entre cantidad de usuarios
             Throughputarr1[i] = sumplr1
     ThroughputMean1[i] = (Throughputarr1[i]/countarr1[i])
     
+colors  = ["#b3ffd6","#809c8c" ]
+patterns = ['\/\/','\/']
+plt.style.use("classic")      
 plt.figure()
 #tight_layout()    
 plt.grid()    
-plt.xticks([0,1],('General','UABS'))#, plt.yticks([5,10,15,20,25])
+plt.xticks([0,1],('LTE','LTE + UOS'))#, plt.yticks([5,10,15,20,25])
+plt.yticks(fontsize=14)
 plt.xlabel('Scenarios')
 plt.ylabel('Throughput (Kbps)')    
-plt.bar(np.arange(2),[np.mean(ThroughputMean),np.mean(ThroughputMean1)], yerr=[mean_confidence_interval(ThroughputMean),mean_confidence_interval(ThroughputMean1)])
+plt.xlim(-0.5,1.5)   
+bars = plt.bar(np.arange(2),[np.mean(ThroughputMean),np.mean(ThroughputMean1)], yerr=[mean_confidence_interval(ThroughputMean),mean_confidence_interval(ThroughputMean1)], width =0.45)
+for color, bar,pattern in zip(colors, bars,patterns):
+        bar.set_facecolor(color)
+        bar.set_hatch(pattern)
+        bar.set_edgecolor("black")
+        bar.set_linewidth(1)
+        
+plt.savefig("Graph_Avg_Throughput_per_user.pdf", format='pdf', dpi=1000)
 plt.show()
 
 #test= statistics.mean(Throughput)
