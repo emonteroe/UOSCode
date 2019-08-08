@@ -106,6 +106,9 @@ for i in range(len(clusters)):
 
 #plot the Clusters 
 #plt.title("DBSCAN Clustering")
+#plt.scatter(x2,y2,c="green", label= "UABSs") #plot UABS new position
+#plt.xlabel('x (meters)')
+#plt.ylabel('y (meters)')
 #plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.09),
 #          fancybox=True, shadow=True, ncol=5))
 #plt.show()     

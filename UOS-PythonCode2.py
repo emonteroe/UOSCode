@@ -15,7 +15,7 @@ from pandas import DataFrame
 from sklearn import metrics
 import statistics
 import csv
-import re
+import math
 
 
 
@@ -24,7 +24,7 @@ import re
 # scatter plot, dots colored by class value
 #print(X.shape)
 
-#with open('/home/emanuel/Desktop/ns-3/source/ns-3.29/enBs') as fenBs:
+# with open('/home/emanuel/source/ns-3.29/enBs') as fenBs:
 with open('enBs') as fenBs:
     data1 = np.array(list((float(x), float(y), float(z), int(cellid)) for x, y, z, cellid in csv.reader(fenBs, delimiter= ',')))
     
@@ -42,13 +42,13 @@ with open('UEsLowSinr') as fUEsLow:
 #print("UABSs: "+ str(data3))
 #print("UEsLowSinr: "+ str(data4[0:2][0]))
 x,y,z, cellid= data1.T
-plt.scatter(x,y,c="blue")
+plt.scatter(x,y,c="blue", label= "enBs")
 
 x1,y1,z1= data2.T
-plt.scatter(x1,y1,c="gray")
+plt.scatter(x1,y1,c="gray", label= "UEs")
 
 x2,y2,z2, cellid3= data3.T
-plt.scatter(x2,y2,c="green")
+plt.scatter(x2,y2,c="green", label= "UABSs")
 UABSCoordinates = np.array(list(zip(x2,y2)))
 
 x3,y3,z3, sinr, imsi, cellid4= data4.T
@@ -56,17 +56,18 @@ X = np.array(list(zip(x3,y3)))
 #X = StandardScaler().fit_transform(X)
 #print(X)
 
-plt.scatter(x3,y3,c="red")
+plt.scatter(x3,y3,c="red", label= "UEsSINRLow")
 
 plt.title('BS and UABS Scenario 1')
 plt.xlabel('x (meters)')
 plt.ylabel('y (meters)')
-plt.legend()
+plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),
+          fancybox=True, shadow=True, ncol=5)
 plt.show()
-print(X.size)
+#print(X.size)
 
 ##Clustering with DBSCAN
-DBClusters = DBSCAN( eps=500, min_samples=2, metric ='euclidean',algorithm = 'auto')
+DBClusters = DBSCAN( eps=1000, min_samples=2, metric ='euclidean',algorithm = 'auto')
 DBClusters.fit(X)
 #DBClusters.labels_
 
@@ -76,7 +77,7 @@ core_samples = np.zeros_like(DBClusters.labels_, dtype = bool)
 core_samples[DBClusters.core_sample_indices_] = True
 
 # PRINT CLUSTERS & # of CLUSTERS
-#print("Clusters:"+str(DBClusters.labels_))
+print("Clusters:"+str(DBClusters.labels_))
 
 print('Estimated number of clusters: %d' % n_clusters_)
 
@@ -84,7 +85,7 @@ clusters = [X[DBClusters.labels_ == i] for i in range(n_clusters_)]
 outliers = X[DBClusters.labels_ == -1]
 
 # Plot Outliers
-plt.scatter(outliers[:,0], outliers[:,1], c="black")
+plt.scatter(outliers[:,0], outliers[:,1], c="black", label="Outliers")
 
 
 # Plot Clusters
@@ -99,15 +100,18 @@ for i in range(len(clusters)):
         x_clusters[i].append(clusters[i][j][0])
         y_clusters[i].append(clusters[i][j][1])
         
-     
-    plt.scatter(x_clusters[i], y_clusters[i])
+#        
+    plt.scatter(x_clusters[i], y_clusters[i], label= "Cluster %d" %i)
     colors+=[i]
-     
+
 #plot the Clusters 
 plt.title("DBSCAN Clustering")
-plt.legend(colors)
-plt.show()
-
+plt.scatter(x2,y2,c="green", label= "UABSs") #plot UABS new position
+plt.xlabel('x (meters)')
+plt.ylabel('y (meters)')
+plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),
+          fancybox=True, shadow=True, ncol=5)
+plt.show()     
  
 #Sum of SINR and mean to later prioritize the clusters  
 SUMSinr = [None] * len(clusters)
@@ -137,9 +141,13 @@ CopySINRAvg = SINRAvg.copy()
 SINRAvgPrioritized = []
 for i in range(len(SINRAvg)):
     #print("SINR Max:" + str(max(CopySINRAvg)))
-    SINRAvgPrioritized.append(min(CopySINRAvg))
+    SINRAvgPrioritized.append(min(CopySINRAvg))  #evaluar si es MAX o MIN que quiero para obtener el cluster con mayor SINR
     CopySINRAvg.remove(min(CopySINRAvg))
-   
+
+#Convert SINR to dB just to see which cluster has bigger SINR    
+SINRinDB = []
+for i in range(len(SINRAvgPrioritized)):
+      SINRinDB.append(10 * math.log(SINRAvgPrioritized[i]))  
        
      
 #Centroids - median of clusters
@@ -167,7 +175,7 @@ for i in range(len(SINRAvg)):
 #    print("{} {} ".format(i[0], i[1]))
 #centroidsarray = np.asarray(Centroids)
 #print(centroidsarray)
-    
+
 
 
 #  KNN Implementation for finding the nearest UABS to the X Centroid.
@@ -186,7 +194,6 @@ if  (CentroidsPrio):
 else:
       for i in CentroidsPrio:
             print("{} {} ".format(i[0], i[1]))
-            
 
 #scores = {}
 #scores_list = []
