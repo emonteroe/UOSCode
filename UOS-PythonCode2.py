@@ -18,6 +18,10 @@ import csv
 import math
 
 
+def get_cmap(n, name='hsv'):
+    '''Returns a function that maps each index in 0, 1, ..., n-1 to a distinct 
+    RGB color; the keyword argument name must be a standard mpl colormap name.'''
+    return plt.cm.get_cmap(name, n)
 
 # generate 2d classification dataset (this will represent the users and the eNodeBs)
 #X, y = make_blobs(n_samples=10000, centers= 4, n_features=2, shuffle = False, cluster_std=1.2)
@@ -42,13 +46,13 @@ with open('UEsLowSinr') as fUEsLow:
 #print("UABSs: "+ str(data3))
 #print("UEsLowSinr: "+ str(data4[0:2][0]))
 x,y,z, cellid= data1.T
-plt.scatter(x,y,c="blue", label= "enBs")
+plt.scatter(x,y,c="blue", label= "enBs", s=15**2)
 
 x1,y1,z1= data2.T
 plt.scatter(x1,y1,c="gray", label= "UEs")
 
 x2,y2,z2, cellid3= data3.T
-plt.scatter(x2,y2,c="green", label= "UABSs")
+plt.scatter(x2,y2,c="yellow", label= "UABSs", s=10**2)
 UABSCoordinates = np.array(list(zip(x2,y2)))
 
 x3,y3,z3, sinr, imsi, cellid4= data4.T
@@ -56,13 +60,20 @@ X = np.array(list(zip(x3,y3)))
 #X = StandardScaler().fit_transform(X)
 #print(X)
 
-plt.scatter(x3,y3,c="red", label= "UEsSINRLow")
+plt.scatter(x3,y3,c="red", label= "UEsLowSINR")
 
-plt.title('BS and UABS Scenario 1')
-plt.xlabel('x (meters)')
-plt.ylabel('y (meters)')
-plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),
-          fancybox=True, shadow=True, ncol=5)
+#circle2 = plt.Circle((0.5, 0.5), 0.2, color='blue', fill=False)
+#fig, ax = plt.subplots()
+#ax.add_artist(circle2)
+
+#plt.title('LTE + UOS')
+plt.xlabel('x (meters)', fontsize = 16)
+plt.ylabel('y (meters)', fontsize = 16)
+plt.legend( loc='upper right',bbox_to_anchor=(1.1, 1.05),
+          fancybox=True, shadow=True, ncol=1)
+#plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),
+#          fancybox=True, shadow=True, ncol=5)
+plt.savefig("Graph_Initial_UOS_Scenario.pdf", format='pdf', dpi=1000)
 plt.show()
 #print(X.size)
 
@@ -89,9 +100,12 @@ plt.scatter(outliers[:,0], outliers[:,1], c="black", label="Outliers")
 
 
 # Plot Clusters
+cmap = get_cmap(len(clusters))
 x_clusters = [None] * len(clusters)
 y_clusters = [None] * len(clusters)
-colors = [0]
+#colors = [0]
+colors = "bgrcmykw"
+color_index = 0
 for i in range(len(clusters)):
     x_clusters[i] = []
     y_clusters[i] = []
@@ -101,16 +115,19 @@ for i in range(len(clusters)):
         y_clusters[i].append(clusters[i][j][1])
         
 #        
-    plt.scatter(x_clusters[i], y_clusters[i], label= "Cluster %d" %i)
-    colors+=[i]
+    
+    plt.scatter(x_clusters[i], y_clusters[i], label= "Cluster %d" %i,  s=8**2, c=colors[color_index]) #c=cmap(i)) 
+    color_index += 1
+    
 
 #plot the Clusters 
-plt.title("DBSCAN Clustering")
-plt.scatter(x2,y2,c="green", label= "UABSs") #plot UABS new position
-plt.xlabel('x (meters)')
-plt.ylabel('y (meters)')
+#plt.title("Clusters Vs Serving UABS")
+plt.scatter(x2,y2,c="yellow", label= "UABSs", s=10**2) #plot UABS new position
+plt.xlabel('x (meters)', fontsize = 16)
+plt.ylabel('y (meters)', fontsize = 16)
 plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),
           fancybox=True, shadow=True, ncol=5)
+plt.savefig("Graph_Clustered_UOS_Scenario.pdf", format='pdf', dpi=1000)
 plt.show()     
  
 #Sum of SINR and mean to later prioritize the clusters  
@@ -183,7 +200,7 @@ for i in range(len(SINRAvg)):
 # Look at the five closest neighbors.
 if  (CentroidsPrio):
       Kneighbors = 2
-      knn = KNeighborsClassifier(n_neighbors= Kneighbors, weights= "uniform" , algorithm="auto")
+      knn = KNeighborsClassifier(n_neighbors= Kneighbors, weights= "distance" , algorithm="auto") #estaba weight="uniform"
       knn.fit(UABSCoordinates,cellid3)
 #predict witch UABS will be serving to the X Centroid.
       Knnpredict= knn.predict(CentroidsPrio)
