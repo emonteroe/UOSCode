@@ -744,10 +744,11 @@ std::ofstream UABS_Qty; //To get the quantity of UABS used per RUNS
 				SeedManager::SetSeed (seed);
 				NS_LOG_UNCOND("Run # " << std::to_string(z));
 				
+				Users_UABS.str(""); //To clean these variables in every run because they are global.
+				Qty_UABS.str("");	//To clean these variables in every run because they are global.
 
-				
-				Users_UABS << "UE_info_UABS_RUN# " + std::to_string(z); 
-				Qty_UABS << "Quantity_UABS_per_RUN# " + std::to_string(z);   
+				Users_UABS << "UE_info_UABS_RUN#" + std::to_string(z); 
+				Qty_UABS << "Quantity_UABS_per_RUN#" + std::to_string(z);   
 			
 				UE_UABS.open(Users_UABS.str());
 				UABS_Qty.open(Qty_UABS.str());
@@ -794,13 +795,13 @@ std::ofstream UABS_Qty; //To get the quantity of UABS used per RUNS
 		//Pathlossmodel
 		if (scen == 0 || scen == 1 || scen == 3)
 		{
-			NS_LOG_UNCOND("Pathloss model: Nakagami Propagation ");
-			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::NakagamiPropagationLossModel"));
+			// NS_LOG_UNCOND("Pathloss model: Nakagami Propagation ");
+			// lteHelper->SetAttribute("PathlossModel",StringValue("ns3::NakagamiPropagationLossModel"));
 
-			// lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
-	  //   	lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
-	  //   	lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
-	  //   	//Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
+			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
+	    	lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
+	    	lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
+	    	Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
 		}
 
 		//lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::FriisPropagationLossModel"));
@@ -815,8 +816,8 @@ std::ofstream UABS_Qty; //To get the quantity of UABS used per RUNS
 			NS_LOG_UNCOND("Pathloss model: OkumuraHata ");
 			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
 	    	lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
-	    	//lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
-	    	//Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
+	    	lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
+	    	Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
 	    }
 
 		//lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::HybridBuildingsPropagationLossModel"));
@@ -1177,7 +1178,7 @@ std::ofstream UABS_Qty; //To get the quantity of UABS used per RUNS
 	  	if (scen == 3 || scen == 4)
 		{	
 	
-			//Simulator::Schedule(Seconds(11),&requestVideoStream, remoteHost, ueOverloadNodes, remoteHostAddr, simTime); //estaba en 11 segundos
+			Simulator::Schedule(Seconds(11),&requestVideoStream, remoteHost, ueOverloadNodes, remoteHostAddr, simTime); //estaba en 11 segundos
 			
 		}
 
@@ -1381,6 +1382,7 @@ std::ofstream UABS_Qty; //To get the quantity of UABS used per RUNS
 
 		UE_UABS.close();
 		UABS_Qty.close();
+
 		Simulator::Destroy ();
 	  
 		NS_LOG_INFO ("Done.");
