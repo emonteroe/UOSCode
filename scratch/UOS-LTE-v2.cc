@@ -1009,9 +1009,9 @@ std::ofstream UABS_Qty; //To get the quantity of UABS used per RUNS
 			// 								"LayoutType", StringValue ("RowFirst"));
 
 			mobilityUABS.Install(UABSNodes);
-
-		Config::SetDefault ("ns3::LteEnbPhy::TxPower", DoubleValue (UABSTxPower));
-		Config::SetDefault( "ns3::LteEnbPhy::NoiseFigure", DoubleValue(5) );    // Default 5
+			UABSTxPower = 0;
+			Config::SetDefault ("ns3::LteEnbPhy::TxPower", DoubleValue (UABSTxPower));
+			Config::SetDefault( "ns3::LteEnbPhy::NoiseFigure", DoubleValue(5) );    // Default 5
 		
 		//--------------------Antenna parameters----------------------// 
 		
