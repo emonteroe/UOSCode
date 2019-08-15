@@ -15,16 +15,20 @@ from pandas import DataFrame
 from sklearn import metrics
 import statistics
 import csv
-import re
+import math
 
 
+def get_cmap(n, name='hsv'):
+    '''Returns a function that maps each index in 0, 1, ..., n-1 to a distinct 
+    RGB color; the keyword argument name must be a standard mpl colormap name.'''
+    return plt.cm.get_cmap(name, n)
 
 # generate 2d classification dataset (this will represent the users and the eNodeBs)
 #X, y = make_blobs(n_samples=10000, centers= 4, n_features=2, shuffle = False, cluster_std=1.2)
 # scatter plot, dots colored by class value
 #print(X.shape)
 
-#with open('/home/emanuel/Desktop/ns-3/source/ns-3.29/enBs') as fenBs:
+# with open('/home/emanuel/source/ns-3.29/enBs') as fenBs:
 with open('enBs') as fenBs:
     data1 = np.array(list((float(x), float(y), float(z), int(cellid)) for x, y, z, cellid in csv.reader(fenBs, delimiter= ',')))
     
@@ -42,13 +46,13 @@ with open('UEsLowSinr') as fUEsLow:
 #print("UABSs: "+ str(data3))
 #print("UEsLowSinr: "+ str(data4[0:2][0]))
 x,y,z, cellid= data1.T
-plt.scatter(x,y,c="blue")
+plt.scatter(x,y,c="blue", label= "enBs", s=15**2)
 
 x1,y1,z1= data2.T
-plt.scatter(x1,y1,c="gray")
+plt.scatter(x1,y1,c="gray", label= "UEs")
 
 x2,y2,z2, cellid3= data3.T
-plt.scatter(x2,y2,c="green")
+plt.scatter(x2,y2,c="yellow", label= "UABSs", s=10**2)
 UABSCoordinates = np.array(list(zip(x2,y2)))
 
 x3,y3,z3, sinr, imsi, cellid4= data4.T
@@ -56,17 +60,25 @@ X = np.array(list(zip(x3,y3)))
 #X = StandardScaler().fit_transform(X)
 #print(X)
 
-plt.scatter(x3,y3,c="red")
+plt.scatter(x3,y3,c="red", label= "UEsLowSINR")
 
-plt.title('BS and UABS Scenario 1')
-plt.xlabel('x (meters)')
-plt.ylabel('y (meters)')
-plt.legend()
+#circle2 = plt.Circle((0.5, 0.5), 0.2, color='blue', fill=False)
+#fig, ax = plt.subplots()
+#ax.add_artist(circle2)
+
+#plt.title('LTE + UOS')
+plt.xlabel('x (meters)', fontsize = 16)
+plt.ylabel('y (meters)', fontsize = 16)
+plt.legend( loc='upper right',bbox_to_anchor=(1.1, 1.05),
+          fancybox=True, shadow=True, ncol=1)
+#plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),
+#          fancybox=True, shadow=True, ncol=5)
+plt.savefig("Graph_Initial_UOS_Scenario.pdf", format='pdf', dpi=1000)
 plt.show()
-print(X.size)
+#print(X.size)
 
 ##Clustering with DBSCAN
-DBClusters = DBSCAN( eps=500, min_samples=2, metric ='euclidean',algorithm = 'auto')
+DBClusters = DBSCAN( eps=1000, min_samples=2, metric ='euclidean',algorithm = 'auto')
 DBClusters.fit(X)
 #DBClusters.labels_
 
@@ -76,7 +88,7 @@ core_samples = np.zeros_like(DBClusters.labels_, dtype = bool)
 core_samples[DBClusters.core_sample_indices_] = True
 
 # PRINT CLUSTERS & # of CLUSTERS
-#print("Clusters:"+str(DBClusters.labels_))
+print("Clusters:"+str(DBClusters.labels_))
 
 print('Estimated number of clusters: %d' % n_clusters_)
 
@@ -84,13 +96,16 @@ clusters = [X[DBClusters.labels_ == i] for i in range(n_clusters_)]
 outliers = X[DBClusters.labels_ == -1]
 
 # Plot Outliers
-plt.scatter(outliers[:,0], outliers[:,1], c="black")
+plt.scatter(outliers[:,0], outliers[:,1], c="black", label="Outliers")
 
 
 # Plot Clusters
+cmap = get_cmap(len(clusters))
 x_clusters = [None] * len(clusters)
 y_clusters = [None] * len(clusters)
-colors = [0]
+#colors = [0]
+colors = "bgrcmykw"
+color_index = 0
 for i in range(len(clusters)):
     x_clusters[i] = []
     y_clusters[i] = []
@@ -99,15 +114,21 @@ for i in range(len(clusters)):
         x_clusters[i].append(clusters[i][j][0])
         y_clusters[i].append(clusters[i][j][1])
         
-     
-    plt.scatter(x_clusters[i], y_clusters[i])
-    colors+=[i]
-     
-#plot the Clusters 
-plt.title("DBSCAN Clustering")
-plt.legend(colors)
-plt.show()
+#        
+    
+    plt.scatter(x_clusters[i], y_clusters[i], label= "Cluster %d" %i,  s=8**2, c=colors[color_index]) #c=cmap(i)) 
+    color_index += 1
+    
 
+#plot the Clusters 
+#plt.title("Clusters Vs Serving UABS")
+plt.scatter(x2,y2,c="yellow", label= "UABSs", s=10**2) #plot UABS new position
+plt.xlabel('x (meters)', fontsize = 16)
+plt.ylabel('y (meters)', fontsize = 16)
+plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),
+          fancybox=True, shadow=True, ncol=5)
+plt.savefig("Graph_Clustered_UOS_Scenario.pdf", format='pdf', dpi=1000)
+plt.show()     
  
 #Sum of SINR and mean to later prioritize the clusters  
 SUMSinr = [None] * len(clusters)
@@ -137,9 +158,13 @@ CopySINRAvg = SINRAvg.copy()
 SINRAvgPrioritized = []
 for i in range(len(SINRAvg)):
     #print("SINR Max:" + str(max(CopySINRAvg)))
-    SINRAvgPrioritized.append(min(CopySINRAvg))
+    SINRAvgPrioritized.append(min(CopySINRAvg))  #evaluar si es MAX o MIN que quiero para obtener el cluster con mayor SINR
     CopySINRAvg.remove(min(CopySINRAvg))
-   
+
+#Convert SINR to dB just to see which cluster has bigger SINR    
+SINRinDB = []
+for i in range(len(SINRAvgPrioritized)):
+      SINRinDB.append(10 * math.log(SINRAvgPrioritized[i]))  
        
      
 #Centroids - median of clusters
@@ -167,7 +192,7 @@ for i in range(len(SINRAvg)):
 #    print("{} {} ".format(i[0], i[1]))
 #centroidsarray = np.asarray(Centroids)
 #print(centroidsarray)
-    
+
 
 
 #  KNN Implementation for finding the nearest UABS to the X Centroid.
@@ -175,7 +200,7 @@ for i in range(len(SINRAvg)):
 # Look at the five closest neighbors.
 if  (CentroidsPrio):
       Kneighbors = 2
-      knn = KNeighborsClassifier(n_neighbors= Kneighbors, weights= "uniform" , algorithm="auto")
+      knn = KNeighborsClassifier(n_neighbors= Kneighbors, weights= "distance" , algorithm="auto") #estaba weight="uniform"
       knn.fit(UABSCoordinates,cellid3)
 #predict witch UABS will be serving to the X Centroid.
       Knnpredict= knn.predict(CentroidsPrio)
@@ -186,7 +211,6 @@ if  (CentroidsPrio):
 else:
       for i in CentroidsPrio:
             print("{} {} ".format(i[0], i[1]))
-            
 
 #scores = {}
 #scores_list = []

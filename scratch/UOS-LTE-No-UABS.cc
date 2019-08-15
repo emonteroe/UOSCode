@@ -24,7 +24,7 @@
     Configuration:
         No.of Cells     : 6
         Cell Radius     : -
-        No.Of users     : 70 moving user 
+        No.Of users     : 100 moving user 
         User Speed      : 1 - 4 m/s
         Fading Model    :
         Path Loss Model :
@@ -82,7 +82,7 @@ const uint16_t numberOfeNodeBNodes = 4;
 const uint16_t numberOfUENodes = 100; //Number of user to test: 245, 392, 490 (The number of users and their traffic model follow the parameters recommended by the 3GPP)
 const uint16_t numberOfOverloadUENodes = 0; // user that will be connected to an specific enB. 
 const uint16_t numberOfUABS = 6;
-double simTime = 120; // 120 secs ||100 secs || 300 secs
+double simTime = 60; // 120 secs ||100 secs || 300 secs
 const int m_distance = 2000; //m_distance between enBs towers.
 // Inter packet interval in ms
 // double interPacketInterval = 1;
@@ -124,6 +124,11 @@ int enBpowerFailure=0;
 int transmissionStart = 0;
 //double UABSPriority[20];
 bool graphType = false; // If "true" generates all the graphs based in FlowsVSThroughput, if "else" generates all the graphs based in TimeVSThroughput
+std::stringstream Users_UABS; // To UEs cell id in every second of the simulation
+std::stringstream Qty_UABS; //To get the quantity of UABS used per RUNS
+std::ofstream UE_UABS; // To UEs cell id in every second of the simulation
+std::ofstream UABS_Qty; //To get the quantity of UABS used per RUNS
+
 	 
 		NS_LOG_COMPONENT_DEFINE ("UOSLTE");
 
@@ -156,6 +161,12 @@ bool graphType = false; // If "true" generates all the graphs based in FlowsVSTh
 			ue_imsi_sinr[imsi-1]=sinrdB; 
 			ue_imsi_sinr_linear[imsi-1]=sinrLinear; //To pass SIRN Linear to python code to do the linear sum
 			//std::cout << "Sinr: " << ue_imsi_sinr[imsi-1] <<" Sinr Linear: "<< sinrLinear << " Imsi: "<< imsi << " CellId: " << cellId << " rnti: "<< rnti << endl;
+			
+			
+
+			UE_UABS << (double)Simulator::Now().GetSeconds() << "," << imsi << "," << cellId <<"," << sinrLinear <<std::endl;
+
+
 
 		}
 
@@ -481,6 +492,7 @@ bool graphType = false; // If "true" generates all the graphs based in FlowsVSTh
 				
 				NS_LOG_UNCOND(std::to_string(j) <<" UABS needed: Setting TXPower, Velocity and position");
 				SetTXPowerPositionAndVelocityUABS(UABSNodes, speedUABS, UABSLteDevs, CoorPriorities_Vector, UABSPriority); 
+				UABS_Qty << "UABS needed " << std::to_string(j) << std::endl;
 			}
 			
 			Simulator::Schedule(Seconds(6), &GetPrioritizedClusters,UABSNodes,  speedUABS,  UABSLteDevs);
@@ -505,18 +517,20 @@ bool graphType = false; // If "true" generates all the graphs based in FlowsVSTh
 			DropPacketsum += iter->second.packetsDropped.size();
 			Delaysum += iter->second.delaySum.GetSeconds();
 
-			std::cout<<"Flow ID: " << iter->first << " Src Addr " << t.sourceAddress << " Dst Addr " << t.destinationAddress<<"\n";
-			std::cout<<"Tx Packets = " << iter->second.txPackets<<"\n";
-			std::cout<<"Rx Packets = " << iter->second.rxPackets<<"\n";
-			//std::cout << "  All Tx Packets: " << txPacketsum << "\n";
-			//std::cout << "  All Rx Packets: " << rxPacketsum << "\n";
-			//std::cout << "  All Delay/Average Packet Delay (APD): " << Delaysum / txPacketsum << "\n"; //APD = Average Packet Delay : to do !
-			//std::cout << "  All Lost Packets: " << LostPacketsum << "\n";
-			//std::cout << "  All Drop Packets: " << DropPacketsum << "\n";
-			std::cout<<"Throughput: " << iter->second.rxBytes * 8.0 / (iter->second.timeLastRxPacket.GetSeconds()-iter->second.timeFirstTxPacket.GetSeconds()) /1024 << " Kbps\n";///1024 << " Mbps\n";
-			std::cout << "Packets Delivery Ratio: " << ((rxPacketsum * 100) / txPacketsum) << "%" << "\n";
-			std::cout << "Packets Loss Ratio: " << ((LostPacketsum * 100) / txPacketsum) << "%" << "\n";
-			std::cout << "Average Packet Delay: " << Delaysum / txPacketsum << "\n"; 
+			// std::cout<<"Flow ID: " << iter->first << " Src Addr " << t.sourceAddress << " Dst Addr " << t.destinationAddress<<"\n";
+			// std::cout<<"Tx Packets = " << iter->second.txPackets<<"\n";
+			// std::cout<<"Rx Packets = " << iter->second.rxPackets<<"\n";
+
+			// //std::cout << "  All Tx Packets: " << txPacketsum << "\n";
+			// //std::cout << "  All Rx Packets: " << rxPacketsum << "\n";
+			// //std::cout << "  All Delay/Average Packet Delay (APD): " << Delaysum / txPacketsum << "\n"; //APD = Average Packet Delay : to do !
+			// //std::cout << "  All Lost Packets: " << LostPacketsum << "\n";
+			// //std::cout << "  All Drop Packets: " << DropPacketsum << "\n";
+
+			// std::cout<<"Throughput: " << iter->second.rxBytes * 8.0 / (iter->second.timeLastRxPacket.GetSeconds()-iter->second.timeFirstTxPacket.GetSeconds()) /1024 << " Kbps\n";///1024 << " Mbps\n";
+			// std::cout << "Packets Delivery Ratio: " << ((rxPacketsum * 100) / txPacketsum) << "%" << "\n";
+			// std::cout << "Packets Loss Ratio: " << ((LostPacketsum * 100) / txPacketsum) << "%" << "\n";
+			// std::cout << "Average Packet Delay: " << Delaysum / txPacketsum << "\n"; 
 			
 			Throughput = iter->second.rxBytes * 8.0 /(iter->second.timeLastRxPacket.GetSeconds()-iter->second.timeFirstTxPacket.GetSeconds())/ 1024;// / 1024;
 			PDR = ((rxPacketsum * 100) / txPacketsum);
@@ -713,6 +727,9 @@ bool graphType = false; // If "true" generates all the graphs based in FlowsVSTh
 		//LogComponentEnable ("EvalvidClient", LOG_LEVEL_INFO);
 		//LogComponentEnable ("EvalvidServer", LOG_LEVEL_INFO);
 
+		// File to Log all Users that will be connected to UABS and how many UABS will be activated.
+		
+
 		CommandLine cmm;
     	cmm.AddValue("randomSeed", "value of seed for random", randomSeed);
     	cmm.AddValue("scen", "scenario to run", scen);
@@ -726,6 +743,14 @@ bool graphType = false; // If "true" generates all the graphs based in FlowsVSTh
 				uint32_t seed = randomSeed + z;
 				SeedManager::SetSeed (seed);
 				NS_LOG_UNCOND("Run # " << std::to_string(z));
+				
+
+				
+				Users_UABS << "UE_info_UABS_RUN# " + std::to_string(z); 
+				Qty_UABS << "Quantity_UABS_per_RUN# " + std::to_string(z);   
+			
+				UE_UABS.open(Users_UABS.str());
+				UABS_Qty.open(Qty_UABS.str());
 
 
 		Ptr<LteHelper> lteHelper = CreateObject<LteHelper> ();
@@ -1354,7 +1379,8 @@ bool graphType = false; // If "true" generates all the graphs based in FlowsVSTh
 		plotFileAPD.close ();
 
 
-		
+		UE_UABS.close();
+		UABS_Qty.close();
 		Simulator::Destroy ();
 	  
 		NS_LOG_INFO ("Done.");
