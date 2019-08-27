@@ -81,7 +81,7 @@ using namespace ns3;
 
 const uint16_t numberOfeNodeBNodes = 4;
 const uint16_t numberOfUENodes = 100; //Number of user to test: 245, 392, 490 (The number of users and their traffic model follow the parameters recommended by the 3GPP)
-const uint16_t numberOfOverloadUENodes = 30; // user that will be connected to an specific enB. 
+const uint16_t numberOfOverloadUENodes = 0; // user that will be connected to an specific enB. 
 const uint16_t numberOfUABS = 6;
 double simTime = 60; // 120 secs ||100 secs || 300 secs
 const int m_distance = 2000; //m_distance between enBs towers.
@@ -799,10 +799,22 @@ std::ofstream UABS_Qty; //To get the quantity of UABS used per RUNS
 			// NS_LOG_UNCOND("Pathloss model: Nakagami Propagation ");
 			// lteHelper->SetAttribute("PathlossModel",StringValue("ns3::NakagamiPropagationLossModel"));
 
-			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
-	    	lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
-	    	lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
-	    	Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
+			// NS_LOG_UNCOND("Pathloss model: OkumuraHata ");
+			// lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
+	  //   	lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
+	  //   	lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
+	  //   	Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
+
+	    	NS_LOG_UNCOND("Pathloss model: ItuR1411LosPropagationLossModel ");
+			lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::ItuR1411LosPropagationLossModel"));
+			lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
+
+
+			NS_LOG_UNCOND("Pathloss model: ItuR1411NlosOverRooftopPropagationLossModel ");	
+			lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::ItuR1411NlosOverRooftopPropagationLossModel"));
+			lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
+			lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
+			lteHelper->SetPathlossModelAttribute("RooftopLevel", DoubleValue(20.0));
 		}
 
 		//lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::FriisPropagationLossModel"));
