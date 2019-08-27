@@ -61,6 +61,7 @@
 #include "ns3/applications-module.h"
 #include "ns3/point-to-point-helper.h"
 #include "ns3/config-store.h"
+#include <ns3/buildings-module.h>
 
 //#include "ns3/gtk-config-store.h"
 #include "ns3/onoff-application.h"
@@ -80,7 +81,7 @@ using namespace ns3;
 
 const uint16_t numberOfeNodeBNodes = 4;
 const uint16_t numberOfUENodes = 100; //Number of user to test: 245, 392, 490 (The number of users and their traffic model follow the parameters recommended by the 3GPP)
-const uint16_t numberOfOverloadUENodes = 0; // user that will be connected to an specific enB. 
+const uint16_t numberOfOverloadUENodes = 30; // user that will be connected to an specific enB. 
 const uint16_t numberOfUABS = 6;
 double simTime = 60; // 120 secs ||100 secs || 300 secs
 const int m_distance = 2000; //m_distance between enBs towers.
@@ -813,17 +814,33 @@ std::ofstream UABS_Qty; //To get the quantity of UABS used per RUNS
 			// lteHelper->SetAttribute("PathlossModel",StringValue("ns3::NakagamiPropagationLossModel"));
 
 
-			NS_LOG_UNCOND("Pathloss model: OkumuraHata ");
-			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
-	    	lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
-	    	lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
-	    	Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
+			// NS_LOG_UNCOND("Pathloss model: OkumuraHata ");
+			// lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
+	  //   	lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
+	  //   	lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
+	  //   	Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
+	    
+			// NS_LOG_UNCOND("Pathloss model: HybridBuildingsPropagationLossModel ");
+			// lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::HybridBuildingsPropagationLossModel"));
+			// lteHelper->SetPathlossModelAttribute ("ShadowSigmaExtWalls", DoubleValue (0));
+			// lteHelper->SetPathlossModelAttribute ("ShadowSigmaOutdoor", DoubleValue (1));
+			// lteHelper->SetPathlossModelAttribute ("ShadowSigmaIndoor", DoubleValue (1.5));
+			//  // use always LOS model
+			// lteHelper->SetPathlossModelAttribute ("Los2NlosThr", DoubleValue (1e6));
+			// lteHelper->SetSpectrumChannelType ("ns3::MultiModelSpectrumChannel");
+
+			NS_LOG_UNCOND("Pathloss model: ItuR1411LosPropagationLossModel ");
+			lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::ItuR1411LosPropagationLossModel"));
+			lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
+
+
+			NS_LOG_UNCOND("Pathloss model: ItuR1411NlosOverRooftopPropagationLossModel ");	
+			lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::ItuR1411NlosOverRooftopPropagationLossModel"));
+			lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
+			lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
+			lteHelper->SetPathlossModelAttribute("RooftopLevel", DoubleValue(20.0));
+
 	    }
-
-		//lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::HybridBuildingsPropagationLossModel"));
-		// use always LOS model ( for the HybridBuildingsPropagationModel )
-  		//lteHelper->SetPathlossModelAttribute ("Los2NlosThr", DoubleValue (1e6));
-
 
 	 
 		// Create a single RemoteHost
@@ -896,6 +913,8 @@ std::ofstream UABS_Qty; //To get the quantity of UABS used per RUNS
 		mobilityenB.SetMobilityModel("ns3::ConstantPositionMobilityModel");
 		mobilityenB.SetPositionAllocator(positionAlloc2);
 		mobilityenB.Install(enbNodes);
+
+		//BuildingsHelper::Install (enbNodes);
 		
 		//---------------Set Power of eNodeBs------------------//  
 		// Ptr<LteEnbPhy> enodeBPhy; 
@@ -910,15 +929,18 @@ std::ofstream UABS_Qty; //To get the quantity of UABS used per RUNS
 		Config::SetDefault( "ns3::LteEnbPhy::NoiseFigure", DoubleValue(5) );    // Default 5
 		
 		//--------------------Antenna parameters----------------------// 
+
 		//--------------------Cosine Antenna--------------------------//
 		// lteHelper->SetEnbAntennaModelType("ns3::CosineAntennaModel");  // CosineAntennaModel associated with an eNB device allows to model one sector of a macro base station
 		// lteHelper->SetEnbAntennaModelAttribute("Orientation", DoubleValue(0)); //default is 0
 		// lteHelper->SetEnbAntennaModelAttribute("Beamwidth", DoubleValue(60));
 		// lteHelper->SetEnbAntennaModelAttribute("MaxGain", DoubleValue(0.0)); //default 0
+
 		//--------------------Parabolic Antenna  -- > to use with multisector cells.
 		// lteHelper->SetEnbAntennaModelType ("ns3::ParabolicAntennaModel");
 		// lteHelper->SetEnbAntennaModelAttribute ("Beamwidth",   DoubleValue (70));
 		// lteHelper->SetEnbAntennaModelAttribute ("MaxAttenuation",     DoubleValue (20.0));
+
 		//--------------------Isotropic Antenna--------------------------//
 		lteHelper->SetEnbAntennaModelType ("ns3::IsotropicAntennaModel");  //irradiates in all directions
 
