@@ -29,8 +29,8 @@ def mean_confidence_interval(data, confidence=0.95):
 def jfi(vetor): #Fairness Index
     sum0=0
     sum1=0
-    jfi = [None] * 30
-    for i in range(30):
+    jfi = [None] * 26
+    for i in range(26):
         sum0 += vetor[i]
         sum1 += pow(vetor[i],2)
         jfi[i] = pow(sum0,2)/((i+1)*sum1)
