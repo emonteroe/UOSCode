@@ -26,6 +26,16 @@ def mean_confidence_interval(data, confidence=0.95):
     h = se * scipy.stats.t.ppf((1 + confidence) / 2., n-1)
     return h
 
+def jfi(vetor): #Fairness Index
+    sum0=0
+    sum1=0
+    jfi = [None] * 30
+    for i in range(30):
+        sum0 += vetor[i]
+        sum1 += pow(vetor[i],2)
+        jfi[i] = pow(sum0,2)/((i+1)*sum1)
+    return jfi
+
 with open('meanThroughput_Sum') as MeanThroughput:
 
     data1 = np.array(list((int(Run),int(time), float(Throughput)) for Run, time, Throughput in csv.reader(MeanThroughput, delimiter= ',')))
@@ -55,6 +65,8 @@ for i in range(30):
             Throughputarr[i] = sumplr
     ThroughputMean[i] = (Throughputarr[i]/countarr[i])
 
+fairness_index_LTE = jfi(ThroughputMean)
+
 # Mean UABS scenario
 countarr1 = [None] * 30 #debe ser 33 o 30 o 20 o el # de runs
 Throughputarr1 = [None] * 30 #debe ser 33 o 30 o 20 o el # de runs
@@ -70,6 +82,8 @@ for i in range(30):
             sumplr1+= (Throughput1[j] / NUsers) #dividir entre cantidad de usuarios
             Throughputarr1[i] = sumplr1
     ThroughputMean1[i] = (Throughputarr1[i]/countarr1[i])
+
+fairness_index_UOS = jfi(ThroughputMean1)
     
 colors  = ["#b3ffd6","#809c8c" ]
 patterns = ['\/\/','\/']
