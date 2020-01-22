@@ -493,7 +493,7 @@ std::ofstream UABS_Qty; //To get the quantity of UABS used per RUNS
 				
 				NS_LOG_UNCOND(std::to_string(j) <<" UABS needed: Setting TXPower, Velocity and position");
 				SetTXPowerPositionAndVelocityUABS(UABSNodes, speedUABS, UABSLteDevs, CoorPriorities_Vector, UABSPriority); 
-				UABS_Qty << "UABS needed " << std::to_string(j) << std::endl;
+				UABS_Qty << (double)Simulator::Now().GetSeconds() << "," <<  std::to_string(j) << std::endl; 
 			}
 			
 			Simulator::Schedule(Seconds(6), &GetPrioritizedClusters,UABSNodes,  speedUABS,  UABSLteDevs);
