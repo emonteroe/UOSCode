@@ -106,6 +106,7 @@ double Throughput=0.0;
 double PDR=0.0; //Packets Delay Rate
 double PLR=0.0; //Packets Lost Rate
 double APD=0.0;	//Average Packet Delay
+double Avg_Jitter=0.0;	//Average Packet Jitter
 bool UABSFlag;
 bool UABS_On_Flag = false;
 uint32_t txPacketsum = 0;
@@ -113,6 +114,7 @@ uint32_t rxPacketsum = 0;
 uint32_t DropPacketsum = 0;
 uint32_t LostPacketsum = 0;
 double Delaysum = 0;
+double Jittersum = 0;
 std::stringstream cmd;
 double UABSHeight = 40;
 double enBHeight = 30;
@@ -129,6 +131,7 @@ std::stringstream Users_UABS; // To UEs cell id in every second of the simulatio
 std::stringstream Qty_UABS; //To get the quantity of UABS used per RUNS
 std::ofstream UE_UABS; // To UEs cell id in every second of the simulation
 std::ofstream UABS_Qty; //To get the quantity of UABS used per RUNS
+Gnuplot2dDataset datasetAvg_Jitter;
 
 	 
 		NS_LOG_COMPONENT_DEFINE ("UOSLTE");
@@ -517,6 +520,7 @@ std::ofstream UABS_Qty; //To get the quantity of UABS used per RUNS
 			LostPacketsum = txPacketsum-rxPacketsum;
 			DropPacketsum += iter->second.packetsDropped.size();
 			Delaysum += iter->second.delaySum.GetSeconds();
+			Jittersum += iter->second.jitterSum.GetSeconds(); //Jitter is the amount of variation in latency/response time, in milliseconds. Reliable connections consistently report back the same latency over and over again. Lots of variation (or 'jitter') is an indication of problems.
 
 			// std::cout<<"Flow ID: " << iter->first << " Src Addr " << t.sourceAddress << " Dst Addr " << t.destinationAddress<<"\n";
 			// std::cout<<"Tx Packets = " << iter->second.txPackets<<"\n";
@@ -536,19 +540,22 @@ std::ofstream UABS_Qty; //To get the quantity of UABS used per RUNS
 			Throughput = iter->second.rxBytes * 8.0 /(iter->second.timeLastRxPacket.GetSeconds()-iter->second.timeFirstTxPacket.GetSeconds())/ 1024;// / 1024;
 			PDR = ((rxPacketsum * 100) / txPacketsum);
 			PLR = ((LostPacketsum * 100) / txPacketsum);
-			APD = (Delaysum / txPacketsum);
+			APD = (Delaysum / rxPacketsum);
+			Avg_Jitter = (Jittersum / rxPacketsum);
 			
 			// Save in datasets to later plot the results.
 			if (graphType == true){
 			datasetThroughput.Add((double)iter->first,(double) Throughput);
 			datasetPDR.Add((double)iter->first,(double) PDR);
 			datasetPLR.Add((double)iter->first,(double) PLR);
-			datasetAPD.Add((double)iter->first,(double) APD);}
+			datasetAPD.Add((double)iter->first,(double) APD);
+			datasetAvg_Jitter.Add((double)iter->first,(double) Avg_Jitter);}
 			else{
 			datasetThroughput.Add((double)Simulator::Now().GetSeconds(),(double) Throughput);
 			datasetPDR.Add((double)Simulator::Now().GetSeconds(),(double) PDR);
 			datasetPLR.Add((double)Simulator::Now().GetSeconds(),(double) PLR);
 			datasetAPD.Add((double)Simulator::Now().GetSeconds(),(double) APD);
+			datasetAvg_Jitter.Add((double)iter->first,(double) Avg_Jitter);
 			}
 
 			//}
@@ -1302,6 +1309,13 @@ std::ofstream UABS_Qty; //To get the quantity of UABS used per RUNS
 		string plotTitleAPD              = "APD Mean";
 		string dataTitleAPD               = "Average Packet Delay Mean";
 
+		//Gnuplot parameters for APD
+		string fileNameWithNoExtensionJitter = "Jitter_run_";
+		string graphicsFileNameJitter       = fileNameWithNoExtensionJitter + std::to_string(z) +".png";
+		string plotFileNameJitter            = fileNameWithNoExtensionJitter + std::to_string(z)+".plt";
+		string plotTitleJitter              = "Jitter Mean";
+		string dataTitleJitter              = "Jitter Mean";
+
 		// Instantiate the plot and set its title.
 		//Throughput
 		Gnuplot gnuplot (graphicsFileName);
@@ -1315,6 +1329,9 @@ std::ofstream UABS_Qty; //To get the quantity of UABS used per RUNS
 		//APD
 		Gnuplot gnuplotAPD (graphicsFileNameAPD);
 		gnuplotAPD.SetTitle (plotTitleAPD);
+		//Jitter
+		Gnuplot gnuplotJitter (graphicsFileNameJitter);
+		gnuplotJitter.SetTitle (plotTitleJitter);
 
 		// Make the graphics file, which the plot file will be when it is used with Gnuplot, be a PNG file.
 		//Throughput
@@ -1325,6 +1342,8 @@ std::ofstream UABS_Qty; //To get the quantity of UABS used per RUNS
 		gnuplotPLR.SetTerminal ("png");
 		//APD
 		gnuplotAPD.SetTerminal ("png");
+		//Jitter
+		gnuplotJitter.SetTerminal ("png");
 
 		// Set the labels for each axis.
 		//Throughput
@@ -1335,6 +1354,8 @@ std::ofstream UABS_Qty; //To get the quantity of UABS used per RUNS
 		gnuplotPLR.SetLegend ("Time (Seconds)", "Packet Lost Ratio (%)");
 		//APD
 		gnuplotAPD.SetLegend ("Time (Seconds)", "Average Packet Delay (%)");
+		//Jitter
+		gnuplotAPD.SetLegend ("Time (Seconds)", "Jitter (%)");
 
 		Gnuplot2dDataset datasetThroughput;
 		Gnuplot2dDataset datasetPDR;
@@ -1345,11 +1366,13 @@ std::ofstream UABS_Qty; //To get the quantity of UABS used per RUNS
 		datasetPDR.SetTitle (dataTitlePDR);
 		datasetPLR.SetTitle (dataTitlePLR);
 		datasetAPD.SetTitle (dataTitleAPD);
+		datasetAvg_Jitter.SetTitle (dataTitleJitter);
 
 		datasetThroughput.SetStyle (Gnuplot2dDataset::LINES_POINTS);
 		datasetPDR.SetStyle (Gnuplot2dDataset::LINES_POINTS);
 		datasetPLR.SetStyle (Gnuplot2dDataset::LINES_POINTS);
 		datasetAPD.SetStyle (Gnuplot2dDataset::LINES_POINTS);
+		datasetAvg_Jitter.SetStyle (Gnuplot2dDataset::LINES_POINTS);
 
 		//Flow Monitor Setup
 		FlowMonitorHelper flowmon;
@@ -1383,6 +1406,8 @@ std::ofstream UABS_Qty; //To get the quantity of UABS used per RUNS
 		gnuplotPLR.AddDataset (datasetPLR);
 		//APD
 		gnuplotAPD.AddDataset (datasetAPD);
+		//Jitter
+		gnuplotJitter.AddDataset (datasetAvg_Jitter);
 
 		// Open the plot file.
 		//Throughput
@@ -1412,6 +1437,13 @@ std::ofstream UABS_Qty; //To get the quantity of UABS used per RUNS
 		gnuplotAPD.GenerateOutput (plotFileAPD);
 		// Close the plot file.
 		plotFileAPD.close ();
+
+		//Jitter
+		ofstream plotFileJitter (plotFileNameJitter.c_str());
+		// Write the plot file.
+		gnuplotJitter.GenerateOutput (plotFileJitter);
+		// Close the plot file.
+		plotFileJitter.close ();
 
 
 		UE_UABS.close();
