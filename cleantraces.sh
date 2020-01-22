@@ -20,3 +20,5 @@
 
 rm Dl*
 rm Ul*
+rm Quantity*
+rm UE_info*
