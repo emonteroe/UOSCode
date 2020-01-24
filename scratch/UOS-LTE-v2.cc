@@ -132,6 +132,7 @@ std::stringstream Qty_UABS; //To get the quantity of UABS used per RUNS
 std::ofstream UE_UABS; // To UEs cell id in every second of the simulation
 std::ofstream UABS_Qty; //To get the quantity of UABS used per RUNS
 Gnuplot2dDataset datasetAvg_Jitter;
+NodeContainer ueNodes;
 
 	 
 		NS_LOG_COMPONENT_DEFINE ("UOSLTE");
@@ -175,7 +176,7 @@ Gnuplot2dDataset datasetAvg_Jitter;
 		}
 
 
-		void GetPositionUEandenB(NodeContainer ueNodes, NodeContainer enbNodes, NodeContainer UABSNodes, NetDeviceContainer enbLteDevs,NetDeviceContainer UABSLteDevs, NodeContainer ueOverloadNodes , NetDeviceContainer ueLteDevs)
+		void GetPositionUEandenB(NodeContainer enbNodes, NodeContainer UABSNodes, NetDeviceContainer enbLteDevs,NetDeviceContainer UABSLteDevs, NodeContainer ueOverloadNodes , NetDeviceContainer ueLteDevs)
 		{
 		// iterate our nodes and print their position.
 			std::stringstream enodeB;
@@ -897,7 +898,9 @@ Gnuplot2dDataset datasetAvg_Jitter;
 		remoteHostStaticRouting->AddNetworkRouteTo (Ipv4Address ("7.0.0.0"), Ipv4Mask ("255.0.0.0"), 1);
 	  
 		// Create node containers: UE, UE Overloaded Group ,  eNodeBs, UABSs.
-		NodeContainer ueNodes;
+		//NodeContainer ueNodes;
+		NodeContainer ueNodesN;
+        ueNodes = ueNodesN;
 		ueNodes.Create(numberOfUENodes);
 		NodeContainer ueOverloadNodes;
 		if (scen == 3 || scen == 4)
