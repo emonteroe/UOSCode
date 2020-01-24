@@ -175,7 +175,7 @@ Gnuplot2dDataset datasetAvg_Jitter;
 		}
 
 
-		void GetPositionUEandenB(NodeContainer ueNodes, NodeContainer enbNodes, NodeContainer UABSNodes, NetDeviceContainer enbLteDevs,NetDeviceContainer UABSLteDevs, NodeContainer ueOverloadNodes)
+		void GetPositionUEandenB(NodeContainer ueNodes, NodeContainer enbNodes, NodeContainer UABSNodes, NetDeviceContainer enbLteDevs,NetDeviceContainer UABSLteDevs, NodeContainer ueOverloadNodes , NetDeviceContainer ueLteDevs)
 		{
 		// iterate our nodes and print their position.
 			std::stringstream enodeB;
@@ -280,7 +280,7 @@ Gnuplot2dDataset datasetAvg_Jitter;
 
 			UABS.close();
 
-			Simulator::Schedule(Seconds(5), &GetPositionUEandenB,ueNodes,enbNodes,UABSNodes,enbLteDevs,UABSLteDevs,ueOverloadNodes);
+			Simulator::Schedule(Seconds(5), &GetPositionUEandenB,ueNodes,enbNodes,UABSNodes,enbLteDevs,UABSLteDevs,ueOverloadNodes,ueLteDevs);
 			
 		}
 
@@ -1109,7 +1109,7 @@ Gnuplot2dDataset datasetAvg_Jitter;
 		if(scen != 0)
 		{
 		// ---------------Get position of enBs, UABSs and UEs. -------------------//
-		Simulator::Schedule(Seconds(5), &GetPositionUEandenB,ueNodes,enbNodes,UABSNodes,enbLteDevs,UABSLteDevs,ueOverloadNodes);
+		Simulator::Schedule(Seconds(5), &GetPositionUEandenB,ueNodes,enbNodes,UABSNodes,enbLteDevs,UABSLteDevs,ueOverloadNodes,ueLteDevs);
 		}
 
 
