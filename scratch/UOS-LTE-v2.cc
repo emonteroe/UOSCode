@@ -182,6 +182,8 @@ Gnuplot2dDataset datasetAvg_Jitter;
 			enodeB << "enBs"; 
 			std::stringstream uenodes;
 			uenodes << "LTEUEs";
+			std::stringstream uenodes_log;
+			uenodes_log << "LTEUEs_Log";
 			std::stringstream OverloadingUenodes;
 			OverloadingUenodes << "LTE_Overloading_UEs";
 			std::stringstream UABSnod;
@@ -189,7 +191,9 @@ Gnuplot2dDataset datasetAvg_Jitter;
 			std::ofstream enB;
 			enB.open(enodeB.str());    
 			std::ofstream UE;
-			UE.open(uenodes.str());  
+			UE.open(uenodes.str());
+			std::ofstream UE_Log;
+			UE_Log.open(uenodes_log.str(),std::ios_base::app);   
 			std::ofstream OverloadingUE;
 			OverloadingUE.open(OverloadingUenodes.str());    
 			std::ofstream UABS;
@@ -198,6 +202,8 @@ Gnuplot2dDataset datasetAvg_Jitter;
 			uint16_t UABSCellId;
 			//uint16_t UEConnectedCellId;
 			Ptr<LteEnbPhy> UABSPhy;
+			Time now = Simulator::Now (); 
+			uint64_t UEImsi;
 			
 			int i=0; 
 			int k=0;
@@ -230,6 +236,9 @@ Gnuplot2dDataset datasetAvg_Jitter;
 				NS_ASSERT (UEposition != 0);
 				Vector pos = UEposition->GetPosition ();
 				UE << pos.x << "," << pos.y << "," << pos.z << std::endl;
+				UEImsi = ueLteDevs.Get(i)->GetObject<LteUeNetDevice>()->GetImsi();
+				UE_Log << now.GetSeconds() << ","  << pos.x << "," << pos.y << "," << pos.z << "," << UEImsi << "," << ue_info_cellid[UEImsi-1] << "," << ue_imsi_sinr_linear[UEImsi-1] << std::endl;
+				
 				
 			}
 			UE.close();
