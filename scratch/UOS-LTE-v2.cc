@@ -281,7 +281,7 @@ NodeContainer ueNodes;
 
 			UABS.close();
 
-			Simulator::Schedule(Seconds(5), &GetPositionUEandenB,ueNodes,enbNodes,UABSNodes,enbLteDevs,UABSLteDevs,ueOverloadNodes,ueLteDevs);
+			Simulator::Schedule(Seconds(5), &GetPositionUEandenB,enbNodes,UABSNodes,enbLteDevs,UABSLteDevs,ueOverloadNodes,ueLteDevs);
 			
 		}
 
@@ -1112,7 +1112,7 @@ NodeContainer ueNodes;
 		if(scen != 0)
 		{
 		// ---------------Get position of enBs, UABSs and UEs. -------------------//
-		Simulator::Schedule(Seconds(5), &GetPositionUEandenB,ueNodes,enbNodes,UABSNodes,enbLteDevs,UABSLteDevs,ueOverloadNodes,ueLteDevs);
+		Simulator::Schedule(Seconds(5), &GetPositionUEandenB,enbNodes,UABSNodes,enbLteDevs,UABSLteDevs,ueOverloadNodes,ueLteDevs);
 		}
 
 
