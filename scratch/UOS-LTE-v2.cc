@@ -229,7 +229,7 @@ NodeContainer ueNodes;
 			}
 			enB.close();
 
-
+			i=0;
 			for (NodeContainer::Iterator j = ueNodes.Begin ();j != ueNodes.End (); ++j)
 			{
 				Ptr<Node> object = *j;
@@ -239,7 +239,7 @@ NodeContainer ueNodes;
 				UE << pos.x << "," << pos.y << "," << pos.z << std::endl;
 				UEImsi = ueLteDevs.Get(i)->GetObject<LteUeNetDevice>()->GetImsi();
 				UE_Log << now.GetSeconds() << ","  << pos.x << "," << pos.y << "," << pos.z << "," << UEImsi << "," << ue_info_cellid[UEImsi-1] << "," << ue_imsi_sinr_linear[UEImsi-1] << std::endl;
-				
+				i++;
 				
 			}
 			UE.close();
@@ -1041,8 +1041,11 @@ NodeContainer ueNodes;
 			positionAllocUABS->Add (Vector( 4500, 1500 , enBHeight)); //2
 			positionAllocUABS->Add (Vector( 1500, 4500 , enBHeight)); //3
 			positionAllocUABS->Add (Vector( 4500, 4500 , enBHeight)); //4
-			positionAllocUABS->Add (Vector( 4500, 4500 , enBHeight)); //5
-			positionAllocUABS->Add (Vector( 4500, 4500 , enBHeight)); //6
+			positionAllocUABS->Add (Vector( 1500, 1500 , enBHeight)); //5
+			positionAllocUABS->Add (Vector( 4500, 1500 , enBHeight)); //6
+			positionAllocUABS->Add (Vector( 1500, 4500 , enBHeight)); //7
+			positionAllocUABS->Add (Vector( 4500, 4500 , enBHeight)); //8
+			// have to add as many os UABS will be used in the simulation, in this example there are 8 UABS available 
 
 			MobilityHelper mobilityUABS;
 			mobilityUABS.SetMobilityModel ("ns3::ConstantVelocityMobilityModel");
