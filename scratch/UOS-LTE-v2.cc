@@ -1249,25 +1249,25 @@ NodeContainer ueNodes;
 		{
 			anim.UpdateNodeDescription(enbNodes.Get(i), "eNb");
 			anim.UpdateNodeColor(enbNodes.Get(i), 0, 255, 0);
-			anim.UpdateNodeSize(i,300,300); // to change the node size in the animation.
+			anim.UpdateNodeSize(enbNodes.Get(i)->GetId(),300,300); // to change the node size in the animation.
 		}
 		for (uint32_t i = 0; i < ueNodes.GetN(); ++i) 
 		{
 			anim.UpdateNodeDescription(ueNodes.Get(i), "UEs");
 			anim.UpdateNodeColor(ueNodes.Get(i),  255, 0, 0);
-			anim.UpdateNodeSize(i,100,100); // to change the node size in the animation.
+			anim.UpdateNodeSize(ueNodes.Get(i)->GetId(),100,100); // to change the node size in the animation.
 		}
 		for (uint32_t i = 0; i < ueOverloadNodes.GetN(); ++i) 
 		{
 			anim.UpdateNodeDescription(ueOverloadNodes.Get(i), "UEs OL");
 			anim.UpdateNodeColor(ueOverloadNodes.Get(i),  255, 0, 0);
-			anim.UpdateNodeSize(i,100,100); // to change the node size in the animation.
+			anim.UpdateNodeSize(ueOverloadNodes.Get(i)->GetId(),100,100); // to change the node size in the animation.
 		}
 		for (uint32_t i = 0; i < UABSNodes.GetN(); ++i) 
 		{
 			anim.UpdateNodeDescription(UABSNodes.Get(i), "UABS");
 			anim.UpdateNodeColor(UABSNodes.Get(i), 0, 0, 255);
-			anim.UpdateNodeSize(i,200,200); // to change the node size in the animation.
+			anim.UpdateNodeSize(UABSNodes.Get(i)->GetId(),200,200); // to change the node size in the animation.
 		}
 			anim.UpdateNodeDescription(remoteHost, "RH");
 			anim.UpdateNodeColor(remoteHost, 0, 255, 255);
