@@ -127,6 +127,8 @@ int enBpowerFailure=0;
 int transmissionStart = 0;
 //double UABSPriority[20];
 bool graphType = false; // If "true" generates all the graphs based in FlowsVSThroughput, if "else" generates all the graphs based in TimeVSThroughput
+int remMode = 0; // [0]: REM disabled; [1]: generate REM at 1 second of simulation;
+//[2]: generate REM at simTime/2 seconds of simulation
 std::stringstream Users_UABS; // To UEs cell id in every second of the simulation
 std::stringstream Qty_UABS; //To get the quantity of UABS used per RUNS
 std::ofstream UE_UABS; // To UEs cell id in every second of the simulation
@@ -755,6 +757,7 @@ NodeContainer ueNodes;
     	cmm.AddValue("graphType","Type of graphs", graphType); 
     	//cmm.AddValue("numberOfUABS", "Number of UABS", numberOfUABS);
     	//cmm.AddValue("numberOfeNodeBNodes", "Number of enBs", numberOfeNodeBNodes);
+    	cmm.AddValue("remMode","Radio environment map mode",remMode);
     	cmm.Parse(argc, argv);
 
 		for (uint32_t z = 0; z < nRuns; z++){
@@ -1402,6 +1405,27 @@ NodeContainer ueNodes;
 		Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowmon.GetClassifier ());
 		Simulator::Schedule(Seconds(1),&ThroughputCalc, monitor,classifier,datasetThroughput,datasetPDR,datasetPLR,datasetAPD);
 		
+		Ptr<RadioEnvironmentMapHelper> remHelper = CreateObject<RadioEnvironmentMapHelper> ();
+		if (remMode > 0){
+		remHelper->SetAttribute ("ChannelPath", StringValue ("/ChannelList/1"));
+		remHelper->SetAttribute ("XMin", DoubleValue (0.0));
+		remHelper->SetAttribute ("XMax", DoubleValue (6000.0));
+		remHelper->SetAttribute ("XRes", UintegerValue (500));
+		remHelper->SetAttribute ("YMin", DoubleValue (0.0));
+		remHelper->SetAttribute ("YMax", DoubleValue (6000.0));
+		remHelper->SetAttribute ("YRes", UintegerValue (500));
+		remHelper->SetAttribute ("Z", DoubleValue (1.0));
+		remHelper->SetAttribute ("Bandwidth", UintegerValue (100));
+		remHelper->SetAttribute ("StopWhenDone", BooleanValue (true));
+		if(remMode == 1){
+			remHelper->SetAttribute ("OutputFile", StringValue ("rem-noUABs.out"));
+			Simulator::Schedule (Seconds (1.0),&RadioEnvironmentMapHelper::Install,remHelper);
+		} else {
+			remHelper->SetAttribute ("OutputFile", StringValue ("rem-withUABs.out"));
+			Simulator::Schedule (Seconds (simTime/2.0),&RadioEnvironmentMapHelper::Install,remHelper);
+			}
+		}
+
 		NS_LOG_UNCOND("Running simulation...");
 		NS_LOG_INFO ("Run Simulation.");
 		Simulator::Stop(Seconds(simTime));
