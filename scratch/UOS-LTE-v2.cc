@@ -122,6 +122,7 @@ int transmissionStart = 0;
 bool graphType = false; // If "true" generates all the graphs based in FlowsVSThroughput, if "else" generates all the graphs based in TimeVSThroughput
 int remMode = 0; // [0]: REM disabled; [1]: generate REM at 1 second of simulation;
 //[2]: generate REM at simTime/2 seconds of simulation
+bool disableUl = true;
 std::stringstream Users_UABS; // To UEs cell id in every second of the simulation
 std::stringstream Qty_UABS; //To get the quantity of UABS used per RUNS
 std::ofstream UE_UABS; // To UEs cell id in every second of the simulation
@@ -584,6 +585,63 @@ NodeContainer ueNodes;
 
 		}
 
+		void UDPApp (Ptr<Node> remoteHost, NodeContainer ueNodes, Ipv4Address remoteHostAddr, Ipv4InterfaceContainer ueIpIface) {
+			// Install and start applications on UEs and remote host
+		  
+			ApplicationContainer serverApps;
+			ApplicationContainer clientApps;
+			Time interPacketInterval = MilliSeconds (200);
+			uint16_t dlPort = 1100;
+			uint16_t ulPort = 2000;
+			  
+			// Ptr<UniformRandomVariable> startTimeSeconds = CreateObject<UniformRandomVariable> ();
+	  //  		startTimeSeconds->SetAttribute ("Min", DoubleValue (0));
+	  //  		startTimeSeconds->SetAttribute ("Max", DoubleValue (interPacketInterval/1000.0));
+
+
+		  for (uint32_t u = 0; u < ueNodes.GetN (); ++u)
+		  {
+		  	
+		  	
+	    	// int startTime = rand() % (int)simTime + 2;
+			int startTime = rand() % (int)4 + 2;
+			ulPort++;
+			dlPort++;
+			
+		       //if (!disableDl)
+		         //{
+		          PacketSinkHelper dlPacketSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), dlPort));
+		          serverApps.Add (dlPacketSinkHelper.Install (ueNodes.Get (u)));
+		          
+		          UdpClientHelper dlClient (ueIpIface.GetAddress (u), dlPort);
+		          dlClient.SetAttribute ("Interval", TimeValue (interPacketInterval));
+		          dlClient.SetAttribute ("MaxPackets", UintegerValue (1000000));
+		          dlClient.SetAttribute ("PacketSize", UintegerValue (1024));
+		          clientApps.Add (dlClient.Install (remoteHost));
+		         //}
+
+		       if (!disableUl)
+		         {
+		          //++ulPort;
+		          PacketSinkHelper ulPacketSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), ulPort));
+		          serverApps.Add (ulPacketSinkHelper.Install (remoteHost));
+
+		          UdpClientHelper ulClient (remoteHostAddr, ulPort);
+		          ulClient.SetAttribute ("Interval", TimeValue (interPacketInterval));
+		          ulClient.SetAttribute ("MaxPackets", UintegerValue (1000000));
+		          //ulClient.SetAttribute ("PacketSize", UintegerValue (1024));
+		          clientApps.Add (ulClient.Install (ueNodes.Get(u)));
+		         }
+			  serverApps.Start (Seconds(1));
+			  //clientApps.Start (Seconds(startTime));
+			  clientApps.Start (Seconds(2));
+
+		   }
+
+		  		
+		  		//Simulator::Schedule (Seconds (1), &CalculateThroughput,ueNodes,clientApps);
+
+		}
 		void requestVideoStream(Ptr<Node> remoteHost, NodeContainer ueNodes, Ipv4Address remoteHostAddr, double simTime)//, double start)
 		{
 			for (uint16_t i = 0; i < ueNodes.GetN(); i++) 
@@ -1236,12 +1294,13 @@ NodeContainer ueNodes;
 		NS_LOG_UNCOND("Resquesting-sending Video...");
 	  	NS_LOG_INFO ("Create Applications.");
 	   
-	  	requestVideoStream(remoteHost, ueNodes, remoteHostAddr, simTime);//, transmissionStart);
-	  	
+	  	//requestVideoStream(remoteHost, ueNodes, remoteHostAddr, simTime);//, transmissionStart);
+	  	UDPApp(remoteHost, ueNodes, remoteHostAddr, ue_all_IpIfaces);
+
 	  	if (scen == 3 || scen == 4)
 		{	
 	
-			Simulator::Schedule(Seconds(11),&requestVideoStream, remoteHost, ueOverloadNodes, remoteHostAddr, simTime); //estaba en 11 segundos
+			//Simulator::Schedule(Seconds(11),&requestVideoStream, remoteHost, ueOverloadNodes, remoteHostAddr, simTime); //estaba en 11 segundos
 			
 		}
 
