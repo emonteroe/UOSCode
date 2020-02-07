@@ -131,6 +131,8 @@ int remMode = 0; // [0]: REM disabled; [1]: generate REM at 1 second of simulati
 bool disableUl = true;
 std::stringstream Users_UABS; // To UEs cell id in every second of the simulation
 std::stringstream Qty_UABS; //To get the quantity of UABS used per RUNS
+std::stringstream uenodes_log;
+std::stringstream Qty_UE_SINR;
 std::ofstream UE_UABS; // To UEs cell id in every second of the simulation
 std::ofstream UABS_Qty; //To get the quantity of UABS used per RUNS
 Gnuplot2dDataset datasetAvg_Jitter;
@@ -185,8 +187,6 @@ NodeContainer ueNodes;
 			enodeB << "enBs"; 
 			std::stringstream uenodes;
 			uenodes << "LTEUEs";
-			std::stringstream uenodes_log;
-			uenodes_log << "LTEUEs_Log";
 			std::stringstream OverloadingUenodes;
 			OverloadingUenodes << "LTE_Overloading_UEs";
 			std::stringstream UABSnod;
@@ -296,6 +296,8 @@ NodeContainer ueNodes;
 			uenodes << "UEsLowSinr";    
 			std::ofstream UE;
 			UE.open(uenodes.str());
+			std::ofstream Qty_UE_SINR_file;
+			Qty_UE_SINR_file.open(Qty_UE_SINR.str(),std::ios_base::app);
 			// NodeContainer::Iterator j = ueNodes.Begin();
 			// NodeContainer::Iterator q = ueOverloadNodes.Begin();
 			int k =0;
@@ -325,6 +327,7 @@ NodeContainer ueNodes;
 				}
 			NS_LOG_UNCOND("Users with low sinr: "); //To know if after an UABS is functioning this number decreases.
 			NS_LOG_UNCOND(k);
+			Qty_UE_SINR_file << Simulator::Now().GetSeconds() << "," << k << std::endl;
 
 			// for(uint16_t i = 0; i < OverloadingUeLteDevs.GetN(); i++)
 			// {
@@ -840,9 +843,14 @@ NodeContainer ueNodes;
 				
 				Users_UABS.str(""); //To clean these variables in every run because they are global.
 				Qty_UABS.str("");	//To clean these variables in every run because they are global.
+				uenodes_log.str("");
+				Qty_UE_SINR.str("");
 
-				Users_UABS << "UE_info_UABS_RUN#" + std::to_string(z); 
-				Qty_UABS << "Quantity_UABS_per_RUN#" + std::to_string(z);   
+				Users_UABS << "UE_info_UABS_RUN#" << z;
+				Qty_UABS << "Quantity_UABS_per_RUN#" << z;
+				uenodes_log << "LTEUEs_Log_RUN#" << z;
+				Qty_UE_SINR << "Qty_UE_SINR_RUN#" << z;
+
 			
 				UE_UABS.open(Users_UABS.str(),std::ios_base::app);
 				UABS_Qty.open(Qty_UABS.str(),std::ios_base::app);
