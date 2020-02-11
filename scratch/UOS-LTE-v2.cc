@@ -364,7 +364,7 @@ NodeContainer ueNodes;
 			
 			if (UABSFlag == true )//&& UABS_On_Flag == false) 
 			{
-				UABSTxPower = 23;
+				UABSTxPower = 27;
 				speedUABS = 0.1;
 
 				if (CoorPriorities_Vector.size() <= UABSNodes.GetN())
@@ -885,12 +885,12 @@ NodeContainer ueNodes;
 	  
 		//Set Handover algorithm 
 
-		// lteHelper->SetHandoverAlgorithmType ("ns3::A2A4RsrqHandoverAlgorithm"); // Handover algorithm implementation based on RSRQ measurements, Event A2 and Event A4.
-		// lteHelper->SetHandoverAlgorithmAttribute ("ServingCellThreshold", UintegerValue (30));
-		// lteHelper->SetHandoverAlgorithmAttribute ("NeighbourCellOffset", UintegerValue (2));                                      
-		lteHelper->SetHandoverAlgorithmType ("ns3::A3RsrpHandoverAlgorithm"); // Handover by Reference Signal Reference Power (RSRP)
-		lteHelper->SetHandoverAlgorithmAttribute ("TimeToTrigger", TimeValue (MilliSeconds (256))); //default: 256
-		lteHelper->SetHandoverAlgorithmAttribute ("Hysteresis", DoubleValue (3.0)); //default: 3.0
+		lteHelper->SetHandoverAlgorithmType ("ns3::A2A4RsrqHandoverAlgorithm"); // Handover algorithm implementation based on RSRQ measurements, Event A2 and Event A4.
+		lteHelper->SetHandoverAlgorithmAttribute ("ServingCellThreshold", UintegerValue (30));
+		lteHelper->SetHandoverAlgorithmAttribute ("NeighbourCellOffset", UintegerValue (3));                                      
+		//lteHelper->SetHandoverAlgorithmType ("ns3::A3RsrpHandoverAlgorithm"); // Handover by Reference Signal Reference Power (RSRP)
+		//lteHelper->SetHandoverAlgorithmAttribute ("TimeToTrigger", TimeValue (MilliSeconds (256))); //default: 256
+		//lteHelper->SetHandoverAlgorithmAttribute ("Hysteresis", DoubleValue (3.0)); //default: 3.0
 		//Config::SetDefault ("ns3::LteEnbRrc::HandoverJoiningTimeoutDuration", TimeValue (Seconds (1)));
 		//Config::SetDefault ("ns3::LteEnbRrc::HandoverLeavingTimeout", TimeValue (Seconds (3)));
 
@@ -1531,7 +1531,7 @@ NodeContainer ueNodes;
 			Simulator::Schedule (Seconds (1.0),&RadioEnvironmentMapHelper::Install,remHelper);
 		} else {
 			remHelper->SetAttribute ("OutputFile", StringValue ("rem-withUABs.out"));
-			Simulator::Schedule (Seconds (simTime/2.0),&RadioEnvironmentMapHelper::Install,remHelper);
+			Simulator::Schedule (Seconds (simTime/4.0),&RadioEnvironmentMapHelper::Install,remHelper);
 			}
 		}
 
