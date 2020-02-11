@@ -604,7 +604,7 @@ NodeContainer ueNodes;
 		  
 			ApplicationContainer serverApps;
 			ApplicationContainer clientApps;
-			Time interPacketInterval = MilliSeconds (200);
+			Time interPacketInterval = MilliSeconds (10);
 			uint16_t dlPort = 1100;
 			uint16_t ulPort = 2000;
 			  
@@ -618,7 +618,7 @@ NodeContainer ueNodes;
 		  	
 		  	
 	    	// int startTime = rand() % (int)simTime + 2;
-			int startTime = rand() % (int)4 + 2;
+			int startTime = (rand() % (int)10)/10.0 + 2;
 			ulPort++;
 			dlPort++;
 			
@@ -646,11 +646,11 @@ NodeContainer ueNodes;
 		          //ulClient.SetAttribute ("PacketSize", UintegerValue (1024));
 		          clientApps.Add (ulClient.Install (ueNodes.Get(u)));
 		         }
-			  serverApps.Start (Seconds(1));
-			  //clientApps.Start (Seconds(startTime));
-			  clientApps.Start (Seconds(2));
-
-		   }
+				serverApps.Start (Seconds(1));
+				clientApps.Start (Seconds(startTime));
+				//clientApps.Start (Seconds(2));
+				clientApps.Stop (Seconds(simTime-2));
+			}
 
 		  		
 		  		//Simulator::Schedule (Seconds (1), &CalculateThroughput,ueNodes,clientApps);
