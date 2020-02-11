@@ -1148,14 +1148,14 @@ NodeContainer ueNodes;
 			// ----------------Install Mobility Model UABS--------------------//
 
 			Ptr<ListPositionAllocator> positionAllocUABS = CreateObject<ListPositionAllocator> ();
-			positionAllocUABS->Add (Vector( 1495, 1495 , enBHeight)); //1
-			positionAllocUABS->Add (Vector( 4505, 1495 , enBHeight)); //2
-			positionAllocUABS->Add (Vector( 1495, 4505 , enBHeight)); //3
-			positionAllocUABS->Add (Vector( 4505, 4505 , enBHeight)); //4
-			positionAllocUABS->Add (Vector( 1505, 1505 , enBHeight)); //5
-			positionAllocUABS->Add (Vector( 4495, 1505 , enBHeight)); //6
-			positionAllocUABS->Add (Vector( 1505, 4495 , enBHeight)); //7
-			positionAllocUABS->Add (Vector( 4495, 4495 , enBHeight)); //8
+			positionAllocUABS->Add (Vector( 1400, 1400 , enBHeight)); //1
+			positionAllocUABS->Add (Vector( 4600, 1400 , enBHeight)); //2
+			positionAllocUABS->Add (Vector( 1400, 4600 , enBHeight)); //3
+			positionAllocUABS->Add (Vector( 4600, 4600 , enBHeight)); //4
+			positionAllocUABS->Add (Vector( 1600, 1600 , enBHeight)); //5
+			positionAllocUABS->Add (Vector( 4400, 1600 , enBHeight)); //6
+			positionAllocUABS->Add (Vector( 1600, 4400 , enBHeight)); //7
+			positionAllocUABS->Add (Vector( 4400, 4400 , enBHeight)); //8
 			// have to add as many os UABS will be used in the simulation, in this example there are 8 UABS available 
 
 			MobilityHelper mobilityUABS;
@@ -1337,7 +1337,7 @@ NodeContainer ueNodes;
 		}
 
 		// ---------------------- Setting video transmition - Start sending-receiving -----------------------//
-		NS_LOG_UNCOND("Resquesting-sending Video...");
+		//NS_LOG_UNCOND("Resquesting-sending Video...");
 	  	NS_LOG_INFO ("Create Applications.");
 	   
 	  	//requestVideoStream(remoteHost, ueNodes, remoteHostAddr, simTime);//, transmissionStart);
@@ -1519,19 +1519,20 @@ NodeContainer ueNodes;
 		remHelper->SetAttribute ("ChannelPath", StringValue ("/ChannelList/0"));
 		remHelper->SetAttribute ("XMin", DoubleValue (0.0));
 		remHelper->SetAttribute ("XMax", DoubleValue (6000.0));
-		remHelper->SetAttribute ("XRes", UintegerValue (500));
+		remHelper->SetAttribute ("XRes", UintegerValue (1500));
 		remHelper->SetAttribute ("YMin", DoubleValue (0.0));
 		remHelper->SetAttribute ("YMax", DoubleValue (6000.0));
-		remHelper->SetAttribute ("YRes", UintegerValue (500));
+		remHelper->SetAttribute ("YRes", UintegerValue (1500));
 		remHelper->SetAttribute ("Z", DoubleValue (1.0));
 		remHelper->SetAttribute ("Bandwidth", UintegerValue (100));
-		remHelper->SetAttribute ("StopWhenDone", BooleanValue (true));
+		//remHelper->SetAttribute ("StopWhenDone", BooleanValue (true));
+		remHelper->SetAttribute ("MaxPointsPerIteration", UintegerValue (50000));
 		if(remMode == 1){
 			remHelper->SetAttribute ("OutputFile", StringValue ("rem-noUABs.out"));
 			Simulator::Schedule (Seconds (1.0),&RadioEnvironmentMapHelper::Install,remHelper);
 		} else {
 			remHelper->SetAttribute ("OutputFile", StringValue ("rem-withUABs.out"));
-			Simulator::Schedule (Seconds (simTime/4.0),&RadioEnvironmentMapHelper::Install,remHelper);
+			Simulator::Schedule (Seconds (20.0),&RadioEnvironmentMapHelper::Install,remHelper);
 			}
 		}
 
