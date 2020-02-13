@@ -129,6 +129,7 @@ bool graphType = false; // If "true" generates all the graphs based in FlowsVSTh
 int remMode = 0; // [0]: REM disabled; [1]: generate REM at 1 second of simulation;
 //[2]: generate REM at simTime/2 seconds of simulation
 bool disableUl = true;
+bool enableNetAnim = false;
 std::stringstream Users_UABS; // To UEs cell id in every second of the simulation
 std::stringstream Qty_UABS; //To get the quantity of UABS used per RUNS
 std::stringstream uenodes_log;
@@ -834,6 +835,7 @@ NodeContainer ueNodes;
     	//cmm.AddValue("numberOfUABS", "Number of UABS", numberOfUABS);
     	//cmm.AddValue("numberOfeNodeBNodes", "Number of enBs", numberOfeNodeBNodes);
     	cmm.AddValue("remMode","Radio environment map mode",remMode);
+		cmm.AddValue("enableNetAnim","Generate NetAnim XML",enableNetAnim);
     	cmm.Parse(argc, argv);
 
 		for (uint32_t z = 0; z < nRuns; z++){
@@ -1354,36 +1356,38 @@ NodeContainer ueNodes;
 
 
 	  	// ---------------------- Configuration of Netanim  -----------------------//
-		AnimationInterface anim ("UOSLTE_run_"+std::to_string(z)+".xml"); // Mandatory
-		anim.SetMaxPktsPerTraceFile(5000000); // Set animation interface max packets. (TO CHECK: how many packets i will be sending?) 
-		// Cor e Descrição para eNb
-		for (uint32_t i = 0; i < enbNodes.GetN(); ++i) 
-		{
-			anim.UpdateNodeDescription(enbNodes.Get(i), "eNb");
-			anim.UpdateNodeColor(enbNodes.Get(i), 0, 255, 0);
-			anim.UpdateNodeSize(enbNodes.Get(i)->GetId(),300,300); // to change the node size in the animation.
+		if(enableNetAnim){
+			AnimationInterface anim ("UOSLTE_run_"+std::to_string(z)+".xml"); // Mandatory
+			anim.SetMaxPktsPerTraceFile(5000000); // Set animation interface max packets. (TO CHECK: how many packets i will be sending?) 
+			// Cor e Descrição para eNb
+			for (uint32_t i = 0; i < enbNodes.GetN(); ++i) 
+			{
+				anim.UpdateNodeDescription(enbNodes.Get(i), "eNb");
+				anim.UpdateNodeColor(enbNodes.Get(i), 0, 255, 0);
+				anim.UpdateNodeSize(enbNodes.Get(i)->GetId(),300,300); // to change the node size in the animation.
+			}
+			for (uint32_t i = 0; i < ueNodes.GetN(); ++i) 
+			{
+				anim.UpdateNodeDescription(ueNodes.Get(i), "UEs");
+				anim.UpdateNodeColor(ueNodes.Get(i),  255, 0, 0);
+				anim.UpdateNodeSize(ueNodes.Get(i)->GetId(),100,100); // to change the node size in the animation.
+			}
+			for (uint32_t i = 0; i < ueOverloadNodes.GetN(); ++i) 
+			{
+				anim.UpdateNodeDescription(ueOverloadNodes.Get(i), "UEs OL");
+				anim.UpdateNodeColor(ueOverloadNodes.Get(i),  255, 0, 0);
+				anim.UpdateNodeSize(ueOverloadNodes.Get(i)->GetId(),100,100); // to change the node size in the animation.
+			}
+			for (uint32_t i = 0; i < UABSNodes.GetN(); ++i) 
+			{
+				anim.UpdateNodeDescription(UABSNodes.Get(i), "UABS");
+				anim.UpdateNodeColor(UABSNodes.Get(i), 0, 0, 255);
+				anim.UpdateNodeSize(UABSNodes.Get(i)->GetId(),200,200); // to change the node size in the animation.
+			}
+				anim.UpdateNodeDescription(remoteHost, "RH");
+				anim.UpdateNodeColor(remoteHost, 0, 255, 255);
+			//anim.UpdateNodeSize(remoteHost,100,100); // to change the node size in the animation.
 		}
-		for (uint32_t i = 0; i < ueNodes.GetN(); ++i) 
-		{
-			anim.UpdateNodeDescription(ueNodes.Get(i), "UEs");
-			anim.UpdateNodeColor(ueNodes.Get(i),  255, 0, 0);
-			anim.UpdateNodeSize(ueNodes.Get(i)->GetId(),100,100); // to change the node size in the animation.
-		}
-		for (uint32_t i = 0; i < ueOverloadNodes.GetN(); ++i) 
-		{
-			anim.UpdateNodeDescription(ueOverloadNodes.Get(i), "UEs OL");
-			anim.UpdateNodeColor(ueOverloadNodes.Get(i),  255, 0, 0);
-			anim.UpdateNodeSize(ueOverloadNodes.Get(i)->GetId(),100,100); // to change the node size in the animation.
-		}
-		for (uint32_t i = 0; i < UABSNodes.GetN(); ++i) 
-		{
-			anim.UpdateNodeDescription(UABSNodes.Get(i), "UABS");
-			anim.UpdateNodeColor(UABSNodes.Get(i), 0, 0, 255);
-			anim.UpdateNodeSize(UABSNodes.Get(i)->GetId(),200,200); // to change the node size in the animation.
-		}
-			anim.UpdateNodeDescription(remoteHost, "RH");
-			anim.UpdateNodeColor(remoteHost, 0, 255, 255);
-		//anim.UpdateNodeSize(remoteHost,100,100); // to change the node size in the animation.
 	 
 
 
