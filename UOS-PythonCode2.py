@@ -78,7 +78,7 @@ plt.show()
 #print(X.size)
 
 ##Clustering with DBSCAN
-DBClusters = DBSCAN( eps=1000, min_samples=2, metric ='euclidean',algorithm = 'auto')
+DBClusters = DBSCAN( eps=600, min_samples=2, metric ='euclidean',algorithm = 'auto')
 DBClusters.fit(X)
 #DBClusters.labels_
 

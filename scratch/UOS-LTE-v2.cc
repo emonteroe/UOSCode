@@ -40,6 +40,7 @@
 #include <iostream>     // std::cout
 #include <sstream>      // std::stringstream
 #include <memory>
+#include <unordered_set>
 #include "ns3/double.h"
 #include <ns3/boolean.h>
 #include <ns3/enum.h>
@@ -62,6 +63,11 @@
 #include "ns3/point-to-point-helper.h"
 #include "ns3/config-store.h"
 #include <ns3/buildings-module.h>
+#include "ns3/propagation-loss-model.h"
+#include "ns3/okumura-hata-propagation-loss-model.h"
+#include "ns3/cost231-propagation-loss-model.h"
+#include "ns3/itu-r-1411-los-propagation-loss-model.h"
+#include "ns3/itu-r-1411-nlos-over-rooftop-propagation-loss-model.h"
 
 //#include "ns3/gtk-config-store.h"
 #include "ns3/onoff-application.h"
@@ -93,7 +99,7 @@ int evalvidId = 0;
 int eNodeBTxPower = 46; //Set enodeB Power dBm 46dBm --> 20MHz  |  43dBm --> 5MHz
 int UABSTxPower = 0;//23;   //Set UABS Power
 uint8_t bandwidth_enb = 100; // 100 RB --> 20MHz  |  25 RB --> 5MHz
-uint8_t bandwidth_UABS = 25; // 100 RB --> 20MHz  |  25 RB --> 5MHz
+uint8_t bandwidth_UABS = 100; // 100 RB --> 20MHz  |  25 RB --> 5MHz
 //uint8_t bandwidth = 25; // To use with UABS --> tengo que ver si no necesito crear otro LTEhelper solo para los UABS.
 double speedUABS = 0;
 double ue_info[numberOfeNodeBNodes + numberOfUABS][numberOfUENodes]; //UE Connection Status Register Matrix
@@ -102,21 +108,14 @@ double ue_imsi_sinr_linear[numberOfUENodes];
 double ue_info_cellid[numberOfUENodes];
 int minSINR = 0; //  minimum SINR to be considered to clusterization
 string GetClusterCoordinates;
-double Throughput=0.0;
 double PDR=0.0; //Packets Delay Rate
 double PLR=0.0; //Packets Lost Rate
 double APD=0.0;	//Average Packet Delay
 double Avg_Jitter=0.0;	//Average Packet Jitter
 bool UABSFlag;
 bool UABS_On_Flag = false;
-uint32_t txPacketsum = 0;
-uint32_t rxPacketsum = 0;
-uint32_t DropPacketsum = 0;
-uint32_t LostPacketsum = 0;
-double Delaysum = 0;
-double Jittersum = 0;
 std::stringstream cmd;
-double UABSHeight = 40;
+double UABSHeight = 80;
 double enBHeight = 30;
 uint32_t nRuns = 1;
 uint32_t randomSeed = 1234;
@@ -127,8 +126,14 @@ int enBpowerFailure=0;
 int transmissionStart = 0;
 //double UABSPriority[20];
 bool graphType = false; // If "true" generates all the graphs based in FlowsVSThroughput, if "else" generates all the graphs based in TimeVSThroughput
+int remMode = 0; // [0]: REM disabled; [1]: generate REM at 1 second of simulation;
+//[2]: generate REM at simTime/2 seconds of simulation
+bool disableUl = true;
+bool enableNetAnim = false;
 std::stringstream Users_UABS; // To UEs cell id in every second of the simulation
 std::stringstream Qty_UABS; //To get the quantity of UABS used per RUNS
+std::stringstream uenodes_log;
+std::stringstream Qty_UE_SINR;
 std::ofstream UE_UABS; // To UEs cell id in every second of the simulation
 std::ofstream UABS_Qty; //To get the quantity of UABS used per RUNS
 Gnuplot2dDataset datasetAvg_Jitter;
@@ -183,8 +188,6 @@ NodeContainer ueNodes;
 			enodeB << "enBs"; 
 			std::stringstream uenodes;
 			uenodes << "LTEUEs";
-			std::stringstream uenodes_log;
-			uenodes_log << "LTEUEs_Log";
 			std::stringstream OverloadingUenodes;
 			OverloadingUenodes << "LTE_Overloading_UEs";
 			std::stringstream UABSnod;
@@ -294,6 +297,8 @@ NodeContainer ueNodes;
 			uenodes << "UEsLowSinr";    
 			std::ofstream UE;
 			UE.open(uenodes.str());
+			std::ofstream Qty_UE_SINR_file;
+			Qty_UE_SINR_file.open(Qty_UE_SINR.str(),std::ios_base::app);
 			// NodeContainer::Iterator j = ueNodes.Begin();
 			// NodeContainer::Iterator q = ueOverloadNodes.Begin();
 			int k =0;
@@ -323,6 +328,7 @@ NodeContainer ueNodes;
 				}
 			NS_LOG_UNCOND("Users with low sinr: "); //To know if after an UABS is functioning this number decreases.
 			NS_LOG_UNCOND(k);
+			Qty_UE_SINR_file << Simulator::Now().GetSeconds() << "," << k << std::endl;
 
 			// for(uint16_t i = 0; i < OverloadingUeLteDevs.GetN(); i++)
 			// {
@@ -359,8 +365,8 @@ NodeContainer ueNodes;
 			
 			if (UABSFlag == true )//&& UABS_On_Flag == false) 
 			{
-				UABSTxPower = 23;
-				speedUABS = 10;
+				UABSTxPower = 27;
+				speedUABS = 0.1;
 
 				if (CoorPriorities_Vector.size() <= UABSNodes.GetN())
 				{
@@ -470,7 +476,9 @@ NodeContainer ueNodes;
 			std::vector<std::string> Split_coord_Prior;
 			ns3::Vector3D CoorPriorities;
 			std::vector<ns3::Vector3D>  CoorPriorities_Vector;
+			std::unordered_set<double> used_UABs;
 			int j=0;
+			double priority;
 			double UABSPriority[20];
 
 			// Call Python code to get string with clusters prioritized and trajectory optimized (Which UABS will serve which cluster).
@@ -486,12 +494,16 @@ NodeContainer ueNodes;
 				boost::split(Split_coord_Prior, GetClusterCoordinates, boost::is_any_of(" "), boost::token_compress_on);
 				UABSPriority [Split_coord_Prior.size()];
 
-				for (uint16_t i = 0; i < Split_coord_Prior.size()-2; i+=3)
+				for (uint16_t i = 0; i < Split_coord_Prior.size()-2 && used_UABs.size() < numberOfUABS; i+=3)
 				{
-					UABSPriority [j] = std::stod(Split_coord_Prior[i+2]); //Save priority into a double array. // cambie UABSPriority [i] por UABSPriority [j] porque i incrementa de 3 en 3. 
-					CoorPriorities = Vector(std::stod(Split_coord_Prior[i]),std::stod(Split_coord_Prior[i+1]),UABSHeight); //Vector containing: [X,Y,FixedHeight]
-					CoorPriorities_Vector.push_back(CoorPriorities); 
-					j++;
+					priority = std::stod(Split_coord_Prior[i+2]); //Save priority into a double array. // cambie UABSPriority [i] por UABSPriority [j] porque i incrementa de 3 en 3. 
+					if(used_UABs.count(priority)==0){
+						used_UABs.insert(priority);
+						UABSPriority [j] = priority;
+						CoorPriorities = Vector(std::stod(Split_coord_Prior[i]),std::stod(Split_coord_Prior[i+1]),UABSHeight); //Vector containing: [X,Y,FixedHeight]
+						CoorPriorities_Vector.push_back(CoorPriorities); 
+						j++;
+					}
 				}
 			}
 			else 
@@ -516,6 +528,13 @@ NodeContainer ueNodes;
 
 		void ThroughputCalc(Ptr<FlowMonitor> monitor, Ptr<Ipv4FlowClassifier> classifier,Gnuplot2dDataset datasetThroughput,Gnuplot2dDataset datasetPDR,Gnuplot2dDataset datasetPLR, Gnuplot2dDataset datasetAPD)
 		{
+		uint32_t txPacketsum = 0;
+		uint32_t rxPacketsum = 0;
+		uint32_t DropPacketsum = 0;
+		uint32_t LostPacketsum = 0;
+		double Delaysum = 0;
+		double Jittersum = 0;
+		double Throughput=0.0;
 
 		monitor->CheckForLostPackets ();
 		//Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowmon->GetClassifier ());
@@ -547,7 +566,6 @@ NodeContainer ueNodes;
 			// std::cout << "Packets Loss Ratio: " << ((LostPacketsum * 100) / txPacketsum) << "%" << "\n";
 			// std::cout << "Average Packet Delay: " << Delaysum / txPacketsum << "\n"; 
 			
-			Throughput = iter->second.rxBytes * 8.0 /(iter->second.timeLastRxPacket.GetSeconds()-iter->second.timeFirstTxPacket.GetSeconds())/ 1024;// / 1024;
 			PDR = ((rxPacketsum * 100) / txPacketsum);
 			PLR = ((LostPacketsum * 100) / txPacketsum);
 			APD = (Delaysum / rxPacketsum);
@@ -555,21 +573,25 @@ NodeContainer ueNodes;
 			
 			// Save in datasets to later plot the results.
 			if (graphType == true){
+			Throughput = iter->second.rxBytes * 8.0 /(iter->second.timeLastRxPacket.GetSeconds()-iter->second.timeFirstTxPacket.GetSeconds())/ 1024;// / 1024;
 			datasetThroughput.Add((double)iter->first,(double) Throughput);
 			datasetPDR.Add((double)iter->first,(double) PDR);
 			datasetPLR.Add((double)iter->first,(double) PLR);
 			datasetAPD.Add((double)iter->first,(double) APD);
-			datasetAvg_Jitter.Add((double)iter->first,(double) Avg_Jitter);}
-			else{
-			datasetThroughput.Add((double)Simulator::Now().GetSeconds(),(double) Throughput);
-			datasetPDR.Add((double)Simulator::Now().GetSeconds(),(double) PDR);
-			datasetPLR.Add((double)Simulator::Now().GetSeconds(),(double) PLR);
-			datasetAPD.Add((double)Simulator::Now().GetSeconds(),(double) APD);
 			datasetAvg_Jitter.Add((double)iter->first,(double) Avg_Jitter);
+			} else {
+			Throughput += iter->second.rxBytes * 8.0 /(iter->second.timeLastRxPacket.GetSeconds()-iter->second.timeFirstTxPacket.GetSeconds())/ 1024;// / 1024;
 			}
+		}
+		if(!graphType){
+		datasetThroughput.Add((double)Simulator::Now().GetSeconds(),(double) Throughput);
+		datasetPDR.Add((double)Simulator::Now().GetSeconds(),(double) PDR);
+		datasetPLR.Add((double)Simulator::Now().GetSeconds(),(double) PLR);
+		datasetAPD.Add((double)Simulator::Now().GetSeconds(),(double) APD);
+		datasetAvg_Jitter.Add((double)Simulator::Now().GetSeconds(),(double) Avg_Jitter);
+		}
 
 			//}
-		}
 
 		//monitor->SerializeToXmlFile("UOSLTE-FlowMonitor.xml",true,true);
 		//monitor->SerializeToXmlFile("UOSLTE-FlowMonitor_run_"+std::to_string(z)+".xml",true,true);
@@ -578,6 +600,63 @@ NodeContainer ueNodes;
 
 		}
 
+		void UDPApp (Ptr<Node> remoteHost, NodeContainer ueNodes, Ipv4Address remoteHostAddr, Ipv4InterfaceContainer ueIpIface) {
+			// Install and start applications on UEs and remote host
+		  
+			ApplicationContainer serverApps;
+			ApplicationContainer clientApps;
+			Time interPacketInterval = MilliSeconds (10);
+			uint16_t dlPort = 1100;
+			uint16_t ulPort = 2000;
+			  
+			// Ptr<UniformRandomVariable> startTimeSeconds = CreateObject<UniformRandomVariable> ();
+	  //  		startTimeSeconds->SetAttribute ("Min", DoubleValue (0));
+	  //  		startTimeSeconds->SetAttribute ("Max", DoubleValue (interPacketInterval/1000.0));
+
+
+		  for (uint32_t u = 0; u < ueNodes.GetN (); ++u)
+		  {
+		  	
+		  	
+	    	// int startTime = rand() % (int)simTime + 2;
+			int startTime = (rand() % (int)10)/10.0 + 2;
+			ulPort++;
+			dlPort++;
+			
+		       //if (!disableDl)
+		         //{
+		          PacketSinkHelper dlPacketSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), dlPort));
+		          serverApps.Add (dlPacketSinkHelper.Install (ueNodes.Get (u)));
+		          
+		          UdpClientHelper dlClient (ueIpIface.GetAddress (u), dlPort);
+		          dlClient.SetAttribute ("Interval", TimeValue (interPacketInterval));
+		          dlClient.SetAttribute ("MaxPackets", UintegerValue (1000000));
+		          dlClient.SetAttribute ("PacketSize", UintegerValue (1024));
+		          clientApps.Add (dlClient.Install (remoteHost));
+		         //}
+
+		       if (!disableUl)
+		         {
+		          //++ulPort;
+		          PacketSinkHelper ulPacketSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), ulPort));
+		          serverApps.Add (ulPacketSinkHelper.Install (remoteHost));
+
+		          UdpClientHelper ulClient (remoteHostAddr, ulPort);
+		          ulClient.SetAttribute ("Interval", TimeValue (interPacketInterval));
+		          ulClient.SetAttribute ("MaxPackets", UintegerValue (1000000));
+		          //ulClient.SetAttribute ("PacketSize", UintegerValue (1024));
+		          clientApps.Add (ulClient.Install (ueNodes.Get(u)));
+		         }
+				serverApps.Start (Seconds(1));
+				clientApps.Start (Seconds(startTime));
+				//clientApps.Start (Seconds(2));
+				clientApps.Stop (Seconds(simTime-2));
+			}
+
+		  		
+		  		//Simulator::Schedule (Seconds (1), &CalculateThroughput,ueNodes,clientApps);
+
+		}
 		void requestVideoStream(Ptr<Node> remoteHost, NodeContainer ueNodes, Ipv4Address remoteHostAddr, double simTime)//, double start)
 		{
 			for (uint16_t i = 0; i < ueNodes.GetN(); i++) 
@@ -755,6 +834,8 @@ NodeContainer ueNodes;
     	cmm.AddValue("graphType","Type of graphs", graphType); 
     	//cmm.AddValue("numberOfUABS", "Number of UABS", numberOfUABS);
     	//cmm.AddValue("numberOfeNodeBNodes", "Number of enBs", numberOfeNodeBNodes);
+    	cmm.AddValue("remMode","Radio environment map mode",remMode);
+		cmm.AddValue("enableNetAnim","Generate NetAnim XML",enableNetAnim);
     	cmm.Parse(argc, argv);
 
 		for (uint32_t z = 0; z < nRuns; z++){
@@ -764,9 +845,14 @@ NodeContainer ueNodes;
 				
 				Users_UABS.str(""); //To clean these variables in every run because they are global.
 				Qty_UABS.str("");	//To clean these variables in every run because they are global.
+				uenodes_log.str("");
+				Qty_UE_SINR.str("");
 
-				Users_UABS << "UE_info_UABS_RUN#" + std::to_string(z); 
-				Qty_UABS << "Quantity_UABS_per_RUN#" + std::to_string(z);   
+				Users_UABS << "UE_info_UABS_RUN#" << z;
+				Qty_UABS << "Quantity_UABS_per_RUN#" << z;
+				uenodes_log << "LTEUEs_Log_RUN#" << z;
+				Qty_UE_SINR << "Qty_UE_SINR_RUN#" << z;
+
 			
 				UE_UABS.open(Users_UABS.str(),std::ios_base::app);
 				UABS_Qty.open(Qty_UABS.str(),std::ios_base::app);
@@ -794,19 +880,19 @@ NodeContainer ueNodes;
 		Config::SetDefault ("ns3::LteEnbRrc::SrsPeriodicity", UintegerValue(320));
 
 
-		 Config::SetDefault( "ns3::LteUePhy::TxPower", DoubleValue(10) );         // Transmission power in dBm
+		 Config::SetDefault( "ns3::LteUePhy::TxPower", DoubleValue(12) );         // Transmission power in dBm
 		 Config::SetDefault( "ns3::LteUePhy::NoiseFigure", DoubleValue(9) );     // Default 5
 		
 
 	  
 		//Set Handover algorithm 
 
-		// lteHelper->SetHandoverAlgorithmType ("ns3::A2A4RsrqHandoverAlgorithm"); // Handover algorithm implementation based on RSRQ measurements, Event A2 and Event A4.
-		// lteHelper->SetHandoverAlgorithmAttribute ("ServingCellThreshold", UintegerValue (30));
-		// lteHelper->SetHandoverAlgorithmAttribute ("NeighbourCellOffset", UintegerValue (2));                                      
-		lteHelper->SetHandoverAlgorithmType ("ns3::A3RsrpHandoverAlgorithm"); // Handover by Reference Signal Reference Power (RSRP)
-		lteHelper->SetHandoverAlgorithmAttribute ("TimeToTrigger", TimeValue (MilliSeconds (256))); //default: 256
-		lteHelper->SetHandoverAlgorithmAttribute ("Hysteresis", DoubleValue (3.0)); //default: 3.0
+		lteHelper->SetHandoverAlgorithmType ("ns3::A2A4RsrqHandoverAlgorithm"); // Handover algorithm implementation based on RSRQ measurements, Event A2 and Event A4.
+		lteHelper->SetHandoverAlgorithmAttribute ("ServingCellThreshold", UintegerValue (30));
+		lteHelper->SetHandoverAlgorithmAttribute ("NeighbourCellOffset", UintegerValue (3));                                      
+		//lteHelper->SetHandoverAlgorithmType ("ns3::A3RsrpHandoverAlgorithm"); // Handover by Reference Signal Reference Power (RSRP)
+		//lteHelper->SetHandoverAlgorithmAttribute ("TimeToTrigger", TimeValue (MilliSeconds (256))); //default: 256
+		//lteHelper->SetHandoverAlgorithmAttribute ("Hysteresis", DoubleValue (3.0)); //default: 3.0
 		//Config::SetDefault ("ns3::LteEnbRrc::HandoverJoiningTimeoutDuration", TimeValue (Seconds (1)));
 		//Config::SetDefault ("ns3::LteEnbRrc::HandoverLeavingTimeout", TimeValue (Seconds (3)));
 
@@ -816,11 +902,15 @@ NodeContainer ueNodes;
 			NS_LOG_UNCOND("Pathloss model: Nakagami Propagation ");
 			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::NakagamiPropagationLossModel"));
 
-			// NS_LOG_UNCOND("Pathloss model: OkumuraHata ");
-			// lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
-	  //   	lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
-	  //   	lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
-	  //   	Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
+			NS_LOG_UNCOND("Pathloss model: OkumuraHata ");
+			ObjectFactory modelFactory;
+			modelFactory.SetTypeId (OkumuraHataPropagationLossModel::GetTypeId());
+			modelFactory.Set ("Environment", StringValue("Urban"));
+			modelFactory.Set ("Frequency", DoubleValue(1.8e9));
+			//lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
+	     	//lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
+	     	//lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(1.8e9));
+	     	Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
 
 	  //   	NS_LOG_UNCOND("Pathloss model: ItuR1411LosPropagationLossModel ");
 			// lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::ItuR1411LosPropagationLossModel"));
@@ -832,6 +922,9 @@ NodeContainer ueNodes;
 			// lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
 			// lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
 			// lteHelper->SetPathlossModelAttribute("RooftopLevel", DoubleValue(20.0));
+			lteHelper->Initialize ();
+			lteHelper->GetDownlinkSpectrumChannel()->AddPropagationLossModel(modelFactory.Create<PropagationLossModel>());
+			lteHelper->GetUplinkSpectrumChannel()->AddPropagationLossModel(modelFactory.Create<PropagationLossModel>());
 		}
 
 		//lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::FriisPropagationLossModel"));
@@ -839,16 +932,22 @@ NodeContainer ueNodes;
 		if (scen == 2 || scen == 4)
 		{	
 			
-			// NS_LOG_UNCOND("Pathloss model: Nakagami Propagation ");
-			// lteHelper->SetAttribute("PathlossModel",StringValue("ns3::NakagamiPropagationLossModel"));
+			NS_LOG_UNCOND("Pathloss model: Nakagami Propagation ");
+			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::NakagamiPropagationLossModel"));
 
+			ObjectFactory modelFactory;
+			modelFactory.SetTypeId (OkumuraHataPropagationLossModel::GetTypeId());
+			modelFactory.Set ("Environment", StringValue("Urban"));
+			modelFactory.Set ("Frequency", DoubleValue(1.8e9));
 
 			NS_LOG_UNCOND("Pathloss model: OkumuraHata ");
-			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
-	    	lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
-	    	lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
-	    	Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
+			//lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
+	    	//lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
+	    	//lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(1.8e9));
+	    Config::SetDefault ("ns3::RadioBearerStatsCalculator::EpochDuration", TimeValue (Seconds(1.00)));
 	    
+			//modelFactory.SetTypeId (Cost231PropagationLossModel::GetTypeId());
+			//modelFactory.Set ("Frequency", DoubleValue(1.8e9));
 			// NS_LOG_UNCOND("Pathloss model: HybridBuildingsPropagationLossModel ");
 			// lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::HybridBuildingsPropagationLossModel"));
 			// lteHelper->SetPathlossModelAttribute ("ShadowSigmaExtWalls", DoubleValue (0));
@@ -858,17 +957,31 @@ NodeContainer ueNodes;
 			// lteHelper->SetPathlossModelAttribute ("Los2NlosThr", DoubleValue (1e6));
 			// lteHelper->SetSpectrumChannelType ("ns3::MultiModelSpectrumChannel");
 
-			// NS_LOG_UNCOND("Pathloss model: ItuR1411LosPropagationLossModel ");
-			// lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::ItuR1411LosPropagationLossModel"));
-			// lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
+			//NS_LOG_UNCOND("Pathloss model: ItuR1411LosPropagationLossModel ");
+			//lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::ItuR1411LosPropagationLossModel"));
+			//lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(1.8e9));
 
+			//NS_LOG_UNCOND("Pathloss model: ItuR1411NlosOverRooftopPropagationLossModel ");
+			//lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::ItuR1411NlosOverRooftopPropagationLossModel"));
+			//lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(1.8e9));
+			//lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
+			//lteHelper->SetPathlossModelAttribute("RooftopLevel", DoubleValue(20.0));
 
-			// NS_LOG_UNCOND("Pathloss model: ItuR1411NlosOverRooftopPropagationLossModel ");	
-			// lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::ItuR1411NlosOverRooftopPropagationLossModel"));
-			// lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
-			// lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
-			// lteHelper->SetPathlossModelAttribute("RooftopLevel", DoubleValue(20.0));
+			//modelFactory.SetTypeId (ItuR1411NlosOverRooftopPropagationLossModel::GetTypeId());
+			//modelFactory.Set ("Frequency", DoubleValue(1.8e9));
+			//modelFactory.Set ("Environment", StringValue("Urban"));
+			//modelFactory.Set ("RooftopLevel", DoubleValue(20.0));
+		
+			lteHelper->Initialize ();
+			lteHelper->GetDownlinkSpectrumChannel()->AddPropagationLossModel(modelFactory.Create<PropagationLossModel>());
+			lteHelper->GetUplinkSpectrumChannel()->AddPropagationLossModel(modelFactory.Create<PropagationLossModel>());
 
+			//NS_LOG_UNCOND("Pathloss model: ItuR1411LosPropagationLossModel ");
+			//modelFactory.SetTypeId (ItuR1411LosPropagationLossModel::GetTypeId());
+			//modelFactory.Set ("Frequency", DoubleValue(1.8e9));
+
+			//lteHelper->GetDownlinkSpectrumChannel()->AddPropagationLossModel(modelFactory.Create<PropagationLossModel>());
+			//lteHelper->GetUplinkSpectrumChannel()->AddPropagationLossModel(modelFactory.Create<PropagationLossModel>());
 	    }
 
 	 
@@ -1037,14 +1150,14 @@ NodeContainer ueNodes;
 			// ----------------Install Mobility Model UABS--------------------//
 
 			Ptr<ListPositionAllocator> positionAllocUABS = CreateObject<ListPositionAllocator> ();
-			positionAllocUABS->Add (Vector( 1500, 1500 , enBHeight)); //1
-			positionAllocUABS->Add (Vector( 4500, 1500 , enBHeight)); //2
-			positionAllocUABS->Add (Vector( 1500, 4500 , enBHeight)); //3
-			positionAllocUABS->Add (Vector( 4500, 4500 , enBHeight)); //4
-			positionAllocUABS->Add (Vector( 1500, 1500 , enBHeight)); //5
-			positionAllocUABS->Add (Vector( 4500, 1500 , enBHeight)); //6
-			positionAllocUABS->Add (Vector( 1500, 4500 , enBHeight)); //7
-			positionAllocUABS->Add (Vector( 4500, 4500 , enBHeight)); //8
+			positionAllocUABS->Add (Vector( 1400, 1400 , enBHeight)); //1
+			positionAllocUABS->Add (Vector( 4600, 1400 , enBHeight)); //2
+			positionAllocUABS->Add (Vector( 1400, 4600 , enBHeight)); //3
+			positionAllocUABS->Add (Vector( 4600, 4600 , enBHeight)); //4
+			positionAllocUABS->Add (Vector( 1600, 1600 , enBHeight)); //5
+			positionAllocUABS->Add (Vector( 4400, 1600 , enBHeight)); //6
+			positionAllocUABS->Add (Vector( 1600, 4400 , enBHeight)); //7
+			positionAllocUABS->Add (Vector( 4400, 4400 , enBHeight)); //8
 			// have to add as many os UABS will be used in the simulation, in this example there are 8 UABS available 
 
 			MobilityHelper mobilityUABS;
@@ -1226,15 +1339,16 @@ NodeContainer ueNodes;
 		}
 
 		// ---------------------- Setting video transmition - Start sending-receiving -----------------------//
-		NS_LOG_UNCOND("Resquesting-sending Video...");
+		//NS_LOG_UNCOND("Resquesting-sending Video...");
 	  	NS_LOG_INFO ("Create Applications.");
 	   
-	  	requestVideoStream(remoteHost, ueNodes, remoteHostAddr, simTime);//, transmissionStart);
-	  	
+	  	//requestVideoStream(remoteHost, ueNodes, remoteHostAddr, simTime);//, transmissionStart);
+	  	UDPApp(remoteHost, ueNodes, remoteHostAddr, ue_all_IpIfaces);
+
 	  	if (scen == 3 || scen == 4)
 		{	
 	
-			Simulator::Schedule(Seconds(11),&requestVideoStream, remoteHost, ueOverloadNodes, remoteHostAddr, simTime); //estaba en 11 segundos
+			//Simulator::Schedule(Seconds(11),&requestVideoStream, remoteHost, ueOverloadNodes, remoteHostAddr, simTime); //estaba en 11 segundos
 			
 		}
 
@@ -1242,36 +1356,38 @@ NodeContainer ueNodes;
 
 
 	  	// ---------------------- Configuration of Netanim  -----------------------//
-		AnimationInterface anim ("UOSLTE_run_"+std::to_string(z)+".xml"); // Mandatory
-		anim.SetMaxPktsPerTraceFile(5000000); // Set animation interface max packets. (TO CHECK: how many packets i will be sending?) 
-		// Cor e Descrição para eNb
-		for (uint32_t i = 0; i < enbNodes.GetN(); ++i) 
-		{
-			anim.UpdateNodeDescription(enbNodes.Get(i), "eNb");
-			anim.UpdateNodeColor(enbNodes.Get(i), 0, 255, 0);
-			anim.UpdateNodeSize(i,300,300); // to change the node size in the animation.
+		if(enableNetAnim){
+			AnimationInterface anim ("UOSLTE_run_"+std::to_string(z)+".xml"); // Mandatory
+			anim.SetMaxPktsPerTraceFile(5000000); // Set animation interface max packets. (TO CHECK: how many packets i will be sending?) 
+			// Cor e Descrição para eNb
+			for (uint32_t i = 0; i < enbNodes.GetN(); ++i) 
+			{
+				anim.UpdateNodeDescription(enbNodes.Get(i), "eNb");
+				anim.UpdateNodeColor(enbNodes.Get(i), 0, 255, 0);
+				anim.UpdateNodeSize(enbNodes.Get(i)->GetId(),300,300); // to change the node size in the animation.
+			}
+			for (uint32_t i = 0; i < ueNodes.GetN(); ++i) 
+			{
+				anim.UpdateNodeDescription(ueNodes.Get(i), "UEs");
+				anim.UpdateNodeColor(ueNodes.Get(i),  255, 0, 0);
+				anim.UpdateNodeSize(ueNodes.Get(i)->GetId(),100,100); // to change the node size in the animation.
+			}
+			for (uint32_t i = 0; i < ueOverloadNodes.GetN(); ++i) 
+			{
+				anim.UpdateNodeDescription(ueOverloadNodes.Get(i), "UEs OL");
+				anim.UpdateNodeColor(ueOverloadNodes.Get(i),  255, 0, 0);
+				anim.UpdateNodeSize(ueOverloadNodes.Get(i)->GetId(),100,100); // to change the node size in the animation.
+			}
+			for (uint32_t i = 0; i < UABSNodes.GetN(); ++i) 
+			{
+				anim.UpdateNodeDescription(UABSNodes.Get(i), "UABS");
+				anim.UpdateNodeColor(UABSNodes.Get(i), 0, 0, 255);
+				anim.UpdateNodeSize(UABSNodes.Get(i)->GetId(),200,200); // to change the node size in the animation.
+			}
+				anim.UpdateNodeDescription(remoteHost, "RH");
+				anim.UpdateNodeColor(remoteHost, 0, 255, 255);
+			//anim.UpdateNodeSize(remoteHost,100,100); // to change the node size in the animation.
 		}
-		for (uint32_t i = 0; i < ueNodes.GetN(); ++i) 
-		{
-			anim.UpdateNodeDescription(ueNodes.Get(i), "UEs");
-			anim.UpdateNodeColor(ueNodes.Get(i),  255, 0, 0);
-			anim.UpdateNodeSize(i,100,100); // to change the node size in the animation.
-		}
-		for (uint32_t i = 0; i < ueOverloadNodes.GetN(); ++i) 
-		{
-			anim.UpdateNodeDescription(ueOverloadNodes.Get(i), "UEs OL");
-			anim.UpdateNodeColor(ueOverloadNodes.Get(i),  255, 0, 0);
-			anim.UpdateNodeSize(i,100,100); // to change the node size in the animation.
-		}
-		for (uint32_t i = 0; i < UABSNodes.GetN(); ++i) 
-		{
-			anim.UpdateNodeDescription(UABSNodes.Get(i), "UABS");
-			anim.UpdateNodeColor(UABSNodes.Get(i), 0, 0, 255);
-			anim.UpdateNodeSize(i,200,200); // to change the node size in the animation.
-		}
-			anim.UpdateNodeDescription(remoteHost, "RH");
-			anim.UpdateNodeColor(remoteHost, 0, 255, 255);
-		//anim.UpdateNodeSize(remoteHost,100,100); // to change the node size in the animation.
 	 
 
 
@@ -1370,7 +1486,7 @@ NodeContainer ueNodes;
 		//APD
 		gnuplotAPD.SetLegend ("Time (Seconds)", "Average Packet Delay (%)");
 		//Jitter
-		gnuplotAPD.SetLegend ("Time (Seconds)", "Jitter (%)");
+		gnuplotJitter.SetLegend ("Time (Seconds)", "Jitter (%)");
 
 		Gnuplot2dDataset datasetThroughput;
 		Gnuplot2dDataset datasetPDR;
@@ -1402,6 +1518,28 @@ NodeContainer ueNodes;
 		Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowmon.GetClassifier ());
 		Simulator::Schedule(Seconds(1),&ThroughputCalc, monitor,classifier,datasetThroughput,datasetPDR,datasetPLR,datasetAPD);
 		
+		Ptr<RadioEnvironmentMapHelper> remHelper = CreateObject<RadioEnvironmentMapHelper> ();
+		if (remMode > 0){
+		remHelper->SetAttribute ("ChannelPath", StringValue ("/ChannelList/0"));
+		remHelper->SetAttribute ("XMin", DoubleValue (0.0));
+		remHelper->SetAttribute ("XMax", DoubleValue (6000.0));
+		remHelper->SetAttribute ("XRes", UintegerValue (1500));
+		remHelper->SetAttribute ("YMin", DoubleValue (0.0));
+		remHelper->SetAttribute ("YMax", DoubleValue (6000.0));
+		remHelper->SetAttribute ("YRes", UintegerValue (1500));
+		remHelper->SetAttribute ("Z", DoubleValue (1.0));
+		remHelper->SetAttribute ("Bandwidth", UintegerValue (100));
+		//remHelper->SetAttribute ("StopWhenDone", BooleanValue (true));
+		remHelper->SetAttribute ("MaxPointsPerIteration", UintegerValue (50000));
+		if(remMode == 1){
+			remHelper->SetAttribute ("OutputFile", StringValue ("rem-noUABs.out"));
+			Simulator::Schedule (Seconds (1.0),&RadioEnvironmentMapHelper::Install,remHelper);
+		} else {
+			remHelper->SetAttribute ("OutputFile", StringValue ("rem-withUABs.out"));
+			Simulator::Schedule (Seconds (20.0),&RadioEnvironmentMapHelper::Install,remHelper);
+			}
+		}
+
 		NS_LOG_UNCOND("Running simulation...");
 		NS_LOG_INFO ("Run Simulation.");
 		Simulator::Stop(Seconds(simTime));
