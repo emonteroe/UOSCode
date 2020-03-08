@@ -605,7 +605,7 @@ NodeContainer ueNodes;
 		  
 			ApplicationContainer serverApps;
 			ApplicationContainer clientApps;
-			Time interPacketInterval = MilliSeconds (10);
+			Time interPacketInterval = MilliSeconds (50);
 			uint16_t dlPort = 1100;
 			uint16_t ulPort = 2000;
 			  
