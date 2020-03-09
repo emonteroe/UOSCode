@@ -605,7 +605,7 @@ NodeContainer ueNodes;
 		  
 			ApplicationContainer serverApps;
 			ApplicationContainer clientApps;
-			Time interPacketInterval = MilliSeconds (10);
+			Time interPacketInterval = MilliSeconds (50);
 			uint16_t dlPort = 1100;
 			uint16_t ulPort = 2000;
 			  
@@ -902,11 +902,11 @@ NodeContainer ueNodes;
 			NS_LOG_UNCOND("Pathloss model: Nakagami Propagation ");
 			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::NakagamiPropagationLossModel"));
 
-			NS_LOG_UNCOND("Pathloss model: OkumuraHata ");
+			//NS_LOG_UNCOND("Pathloss model: OkumuraHata ");
 			ObjectFactory modelFactory;
-			modelFactory.SetTypeId (OkumuraHataPropagationLossModel::GetTypeId());
-			modelFactory.Set ("Environment", StringValue("Urban"));
-			modelFactory.Set ("Frequency", DoubleValue(1.8e9));
+			//modelFactory.SetTypeId (OkumuraHataPropagationLossModel::GetTypeId());
+			//modelFactory.Set ("Environment", StringValue("Urban"));
+			//modelFactory.Set ("Frequency", DoubleValue(1.8e9));
 			//lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
 	     	//lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
 	     	//lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(1.8e9));
@@ -915,7 +915,8 @@ NodeContainer ueNodes;
 	  //   	NS_LOG_UNCOND("Pathloss model: ItuR1411LosPropagationLossModel ");
 			// lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::ItuR1411LosPropagationLossModel"));
 			// lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(18100));
-
+			modelFactory.SetTypeId (ItuR1411LosPropagationLossModel::GetTypeId());
+			modelFactory.Set ("Frequency", DoubleValue(1.8e9));
 
 			// NS_LOG_UNCOND("Pathloss model: ItuR1411NlosOverRooftopPropagationLossModel ");	
 			// lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::ItuR1411NlosOverRooftopPropagationLossModel"));
@@ -936,11 +937,11 @@ NodeContainer ueNodes;
 			lteHelper->SetAttribute("PathlossModel",StringValue("ns3::NakagamiPropagationLossModel"));
 
 			ObjectFactory modelFactory;
-			modelFactory.SetTypeId (OkumuraHataPropagationLossModel::GetTypeId());
-			modelFactory.Set ("Environment", StringValue("Urban"));
-			modelFactory.Set ("Frequency", DoubleValue(1.8e9));
+			//modelFactory.SetTypeId (OkumuraHataPropagationLossModel::GetTypeId());
+			//modelFactory.Set ("Environment", StringValue("Urban"));
+			//modelFactory.Set ("Frequency", DoubleValue(1.8e9));
 
-			NS_LOG_UNCOND("Pathloss model: OkumuraHata ");
+			//NS_LOG_UNCOND("Pathloss model: OkumuraHata ");
 			//lteHelper->SetAttribute("PathlossModel",StringValue("ns3::OkumuraHataPropagationLossModel"));
 	    	//lteHelper->SetPathlossModelAttribute("Environment", StringValue("Urban"));
 	    	//lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(1.8e9));
@@ -957,9 +958,11 @@ NodeContainer ueNodes;
 			// lteHelper->SetPathlossModelAttribute ("Los2NlosThr", DoubleValue (1e6));
 			// lteHelper->SetSpectrumChannelType ("ns3::MultiModelSpectrumChannel");
 
-			//NS_LOG_UNCOND("Pathloss model: ItuR1411LosPropagationLossModel ");
+			NS_LOG_UNCOND("Pathloss model: ItuR1411LosPropagationLossModel ");
 			//lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::ItuR1411LosPropagationLossModel"));
 			//lteHelper->SetPathlossModelAttribute("Frequency", DoubleValue(1.8e9));
+			modelFactory.SetTypeId (ItuR1411LosPropagationLossModel::GetTypeId());
+			modelFactory.Set ("Frequency", DoubleValue(1.8e9));
 
 			//NS_LOG_UNCOND("Pathloss model: ItuR1411NlosOverRooftopPropagationLossModel ");
 			//lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::ItuR1411NlosOverRooftopPropagationLossModel"));
@@ -1354,38 +1357,38 @@ NodeContainer ueNodes;
 
 
 
-
+		AnimationInterface* anim;
 	  	// ---------------------- Configuration of Netanim  -----------------------//
 		if(enableNetAnim){
-			AnimationInterface anim ("UOSLTE_run_"+std::to_string(z)+".xml"); // Mandatory
-			anim.SetMaxPktsPerTraceFile(5000000); // Set animation interface max packets. (TO CHECK: how many packets i will be sending?) 
+			anim = new AnimationInterface ("UOSLTE_run_"+std::to_string(z)+".xml"); // Mandatory
+			anim->SetMaxPktsPerTraceFile(5000000); // Set animation interface max packets. (TO CHECK: how many packets i will be sending?) 
 			// Cor e Descrição para eNb
 			for (uint32_t i = 0; i < enbNodes.GetN(); ++i) 
 			{
-				anim.UpdateNodeDescription(enbNodes.Get(i), "eNb");
-				anim.UpdateNodeColor(enbNodes.Get(i), 0, 255, 0);
-				anim.UpdateNodeSize(enbNodes.Get(i)->GetId(),300,300); // to change the node size in the animation.
+				anim->UpdateNodeDescription(enbNodes.Get(i), "eNb");
+				anim->UpdateNodeColor(enbNodes.Get(i), 0, 255, 0);
+				anim->UpdateNodeSize(enbNodes.Get(i)->GetId(),300,300); // to change the node size in the animation.
 			}
 			for (uint32_t i = 0; i < ueNodes.GetN(); ++i) 
 			{
-				anim.UpdateNodeDescription(ueNodes.Get(i), "UEs");
-				anim.UpdateNodeColor(ueNodes.Get(i),  255, 0, 0);
-				anim.UpdateNodeSize(ueNodes.Get(i)->GetId(),100,100); // to change the node size in the animation.
+				anim->UpdateNodeDescription(ueNodes.Get(i), "UEs");
+				anim->UpdateNodeColor(ueNodes.Get(i),  255, 0, 0);
+				anim->UpdateNodeSize(ueNodes.Get(i)->GetId(),100,100); // to change the node size in the animation.
 			}
 			for (uint32_t i = 0; i < ueOverloadNodes.GetN(); ++i) 
 			{
-				anim.UpdateNodeDescription(ueOverloadNodes.Get(i), "UEs OL");
-				anim.UpdateNodeColor(ueOverloadNodes.Get(i),  255, 0, 0);
-				anim.UpdateNodeSize(ueOverloadNodes.Get(i)->GetId(),100,100); // to change the node size in the animation.
+				anim->UpdateNodeDescription(ueOverloadNodes.Get(i), "UEs OL");
+				anim->UpdateNodeColor(ueOverloadNodes.Get(i),  255, 0, 0);
+				anim->UpdateNodeSize(ueOverloadNodes.Get(i)->GetId(),100,100); // to change the node size in the animation.
 			}
 			for (uint32_t i = 0; i < UABSNodes.GetN(); ++i) 
 			{
-				anim.UpdateNodeDescription(UABSNodes.Get(i), "UABS");
-				anim.UpdateNodeColor(UABSNodes.Get(i), 0, 0, 255);
-				anim.UpdateNodeSize(UABSNodes.Get(i)->GetId(),200,200); // to change the node size in the animation.
+				anim->UpdateNodeDescription(UABSNodes.Get(i), "UABS");
+				anim->UpdateNodeColor(UABSNodes.Get(i), 0, 0, 255);
+				anim->UpdateNodeSize(UABSNodes.Get(i)->GetId(),200,200); // to change the node size in the animation.
 			}
-				anim.UpdateNodeDescription(remoteHost, "RH");
-				anim.UpdateNodeColor(remoteHost, 0, 255, 255);
+				anim->UpdateNodeDescription(remoteHost, "RH");
+				anim->UpdateNodeColor(remoteHost, 0, 255, 255);
 			//anim.UpdateNodeSize(remoteHost,100,100); // to change the node size in the animation.
 		}
 	 
